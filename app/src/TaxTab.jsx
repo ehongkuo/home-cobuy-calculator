@@ -1,6 +1,35 @@
 import React from "react";
 import { CheckCircle, XCircle, ArrowDown, Info } from "lucide-react";
 import { formatCurrency } from "./utils";
+import { TAX_ASSUMPTIONS } from "./financialModel";
+
+const { w2Income, caStateTax, saltCap, standardDeduction, mortgageDebtLimit } =
+  TAX_ASSUMPTIONS;
+
+function CapCheck({ ok, title, children }) {
+  const color = ok ? "#4ade80" : "#fb923c";
+  const Icon = ok ? CheckCircle : XCircle;
+  return (
+    <div
+      style={{
+        flex: 1,
+        minWidth: "260px",
+        background: ok ? "rgba(74, 222, 128, 0.05)" : "rgba(251, 146, 60, 0.08)",
+        border: `1px solid ${ok ? "rgba(74, 222, 128, 0.3)" : "rgba(251, 146, 60, 0.4)"}`,
+        borderRadius: "12px",
+        padding: "20px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+        <Icon color={color} size={24} />
+        <span style={{ color, fontWeight: "bold", fontSize: "1.1rem" }}>
+          {title}: {ok ? "CLEAR" : "CAPPED"}
+        </span>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 function TaxTab({
   isRental,
@@ -11,16 +40,7 @@ function TaxTab({
   propertyTax,
   hoa,
   mortgage,
-  userShareOfInterest,
-  userShareOfPropertyTax,
-  userShareOfLoan,
-  deductibleInterest,
-  deductiblePropertyTax,
-  saltTotal,
-  totalItemized,
-  incrementalDeduction,
-  annualTaxSavings,
-  userTaxShield,
+  scheduleA,
   // Rental LLC props
   purchasePrice,
   rentalInterest,
@@ -63,10 +83,16 @@ function TaxTab({
           </div>
           <div className="card-body">
             <p style={{ color: "#e2e8f0", marginBottom: "16px" }}>
-              Your family LLC has <strong>2 equal members ({(llcShare * 100).toFixed(0)}% each)</strong>:
-              You and your Brother. Because Dad is paying and receiving his portion
-              under the table, he is not on the title or the LLC. This means the IRS sees
-              you and your brother splitting 100% of the income and 100% of the deductions.
+              This scenario models <strong>2 equal LLC members ({(llcShare * 100).toFixed(0)}% each)</strong>:
+              you and your brother. It assigns each member half of the reported
+              rental income and deductions.
+            </p>
+            <p style={{ color: "#fbbf24", marginBottom: "16px" }}>
+              <strong>Tax assumption:</strong> The projected W-2 offset only applies
+              if the taxpayer qualifies as a real estate professional, materially
+              participates in this activity, and clears the at-risk and excess
+              business-loss limitations. Confirm the ownership and payment structure
+              with a tax professional before relying on this scenario.
             </p>
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <div
@@ -283,7 +309,7 @@ function TaxTab({
               <div className="row">
                 <span>
                   Depreciation ({formatCurrency(purchasePrice)} × 80% ÷ 27.5 ÷
-                  3):
+                  2):
                 </span>{" "}
                 <span>-{formatCurrency(userShareOfDepreciation)}</span>
               </div>
@@ -401,17 +427,16 @@ function TaxTab({
                       fontSize: "1.1rem",
                     }}
                   >
-                    ✅ LLC + REPS: This loss REDUCES your W-2 taxes!
+                    Scenario: rental loss offsets W-2 income
                   </div>
                   <p style={{ color: "#e2e8f0", margin: "0 0 16px 0" }}>
-                    Unlike a standard Schedule E rental where this loss would be{" "}
-                    <strong>suspended</strong> (wasted) because your MAGI
-                    exceeds $150k, the LLC + REPS structure makes this loss{" "}
-                    <strong>non-passive</strong>. It directly reduces the income
-                    the IRS taxes you on.
+                    This projection assumes the REPS and material-participation
+                    tests are satisfied and no other loss limitation applies. If
+                    those conditions are not met, some or all of the loss may be
+                    suspended instead of reducing W-2 income this year.
                   </p>
                   <div className="row">
-                    <span>Your W-2 Income:</span> <span>$213,000</span>
+                    <span>Your W-2 Income:</span> <span>{formatCurrency(w2Income)}</span>
                   </div>
                   <div className="row">
                     <span>K-1 Rental Loss:</span>{" "}
@@ -421,7 +446,7 @@ function TaxTab({
                   </div>
                   <div className="row total">
                     <span>New Taxable Income:</span>{" "}
-                    <span>{formatCurrency(213000 + netRentalIncome)}</span>
+                    <span>{formatCurrency(w2Income - standardDeduction + netRentalIncome)}</span>
                   </div>
                   <hr style={{ opacity: 0.2, margin: "16px 0" }} />
                   <div className="row">
@@ -510,13 +535,13 @@ function TaxTab({
                   Without the house:
                 </div>
                 <div className="row">
-                  <span>W2 Income:</span> <span>$213,000</span>
+                  <span>W2 Income:</span> <span>{formatCurrency(w2Income)}</span>
                 </div>
                 <div className="row">
-                  <span>Standard Deduction:</span> <span>-$16,100</span>
+                  <span>Standard Deduction:</span> <span>-{formatCurrency(standardDeduction)}</span>
                 </div>
                 <div className="row total">
-                  <span>Taxable Income:</span> <span>$196,900</span>
+                  <span>Taxable Income:</span> <span>{formatCurrency(w2Income - standardDeduction)}</span>
                 </div>
               </div>
               <div
@@ -539,10 +564,10 @@ function TaxTab({
                   With the LLC rental (Year {selectedYear}):
                 </div>
                 <div className="row">
-                  <span>W2 Income:</span> <span>$213,000</span>
+                  <span>W2 Income:</span> <span>{formatCurrency(w2Income)}</span>
                 </div>
                 <div className="row">
-                  <span>Standard Deduction:</span> <span>-$16,100</span>
+                  <span>Standard Deduction:</span> <span>-{formatCurrency(standardDeduction)}</span>
                 </div>
                 <div className="row">
                   <span>K-1 Rental Net:</span>{" "}
@@ -555,7 +580,7 @@ function TaxTab({
                   <span>Taxable Income:</span>{" "}
                   <span>
                     {formatCurrency(
-                      213000 - 16100 + Math.min(netRentalIncome, 0),
+                      w2Income - standardDeduction + netRentalIncome,
                     )}
                   </span>
                 </div>
@@ -572,7 +597,7 @@ function TaxTab({
                 <strong>Bottom line:</strong>{" "}
                 {netRentalIncome >= 0
                   ? `The rental generates ${formatCurrency(rentalIncome)}/yr of income. After deductions, you owe ${formatCurrency(Math.abs(rentalTaxImpact))}/yr in extra taxes. But you're still cash-flow positive from the rent.`
-                  : `The LLC shows a ${formatCurrency(Math.abs(netRentalIncome))}/yr paper loss that directly reduces your W-2 taxes by ${formatCurrency(annualTaxSavingsFromLoss)}/yr — that's ${formatCurrency(monthlyTaxSavingsFromLoss)}/mo back in your pocket.`}
+                  : `Under the selected REPS assumptions, the LLC shows a ${formatCurrency(Math.abs(netRentalIncome))}/yr paper loss and an estimated tax benefit of ${formatCurrency(annualTaxSavingsFromLoss)}/yr (${formatCurrency(monthlyTaxSavingsFromLoss)}/mo).`}
               </p>
             </div>
           </div>
@@ -612,7 +637,23 @@ function TaxTab({
     );
   }
 
-  // OWNER-OCCUPIED MODE: Schedule A (existing logic)
+  // OWNER-OCCUPIED MODE: Schedule A
+  const {
+    shareOfInterest: userShareOfInterest,
+    shareOfPropertyTax: userShareOfPropertyTax,
+    shareOfLoan: userShareOfLoan,
+    interestFullyDeductible,
+    deductibleInterest,
+    deductiblePropertyTax,
+    saltTotal,
+    saltUnderCap,
+    totalItemized,
+    itemizes,
+    incrementalDeduction,
+    annualTaxSavings,
+    monthlyTaxSavings: userTaxShield,
+  } = scheduleA;
+
   return (
     <div className="tab-fade-in">
       {/* STEP 1 */}
@@ -776,104 +817,42 @@ function TaxTab({
             both:
           </p>
           <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
-            <div
-              style={{
-                flex: 1,
-                minWidth: "280px",
-                background: "rgba(74, 222, 128, 0.05)",
-                border: "1px solid rgba(74, 222, 128, 0.3)",
-                borderRadius: "12px",
-                padding: "20px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  marginBottom: "16px",
-                }}
-              >
-                <CheckCircle color="#4ade80" size={24} />
-                <span
-                  style={{
-                    color: "#4ade80",
-                    fontWeight: "bold",
-                    fontSize: "1.1rem",
-                  }}
-                >
-                  Mortgage Interest Cap: CLEAR
-                </span>
+            <CapCheck ok={interestFullyDeductible} title="Mortgage Interest Cap">
+              <div className="row">
+                <span>IRS Limit:</span> <span>{formatCurrency(mortgageDebtLimit)} of debt per person</span>
               </div>
               <div className="row">
-                <span>IRS Limit:</span> <span>$750,000 of debt per person</span>
+                <span>Your share of loan:</span> <span>{formatCurrency(userShareOfLoan)}</span>
               </div>
               <div className="row">
-                <span>Your share of loan:</span>{" "}
-                <span>{formatCurrency(userShareOfLoan)}</span>
+                <span>Deductible interest:</span>{" "}
+                <span>{formatCurrency(deductibleInterest)} of {formatCurrency(userShareOfInterest)}</span>
               </div>
-              <div className="row" style={{ marginTop: "8px" }}>
-                <span></span>{" "}
-                <span style={{ color: "#4ade80" }}>
-                  {formatCurrency(userShareOfLoan)} &lt; $750,000 ✓
-                </span>
-              </div>
-            </div>
-            <div
-              style={{
-                flex: 1,
-                minWidth: "280px",
-                background: "rgba(74, 222, 128, 0.05)",
-                border: "1px solid rgba(74, 222, 128, 0.3)",
-                borderRadius: "12px",
-                padding: "20px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  marginBottom: "16px",
-                }}
-              >
-                <CheckCircle color="#4ade80" size={24} />
-                <span
-                  style={{
-                    color: "#4ade80",
-                    fontWeight: "bold",
-                    fontSize: "1.1rem",
-                  }}
-                >
-                  SALT Cap: CLEAR
-                </span>
+            </CapCheck>
+            <CapCheck ok={saltUnderCap} title="SALT Cap">
+              <div className="row">
+                <span>IRS Limit (2026):</span> <span>{formatCurrency(saltCap)} total</span>
               </div>
               <div className="row">
-                <span>IRS Limit (2026):</span> <span>$40,400 total</span>
+                <span>CA State Tax:</span> <span>{formatCurrency(caStateTax)}</span>
               </div>
               <div className="row">
-                <span>CA State Tax:</span> <span>$16,000</span>
-              </div>
-              <div className="row">
-                <span>+ Your Property Tax:</span>{" "}
-                <span>{formatCurrency(userShareOfPropertyTax)}</span>
+                <span>+ Your Property Tax:</span> <span>{formatCurrency(userShareOfPropertyTax)}</span>
               </div>
               <div className="row">
                 <span>Your SALT Total:</span>{" "}
-                <span>{formatCurrency(saltTotal)}</span>
-              </div>
-              <div className="row" style={{ marginTop: "8px" }}>
-                <span></span>{" "}
-                <span style={{ color: "#4ade80" }}>
-                  {formatCurrency(saltTotal)} &lt; $40,400 ✓
+                <span style={{ color: saltUnderCap ? "#4ade80" : "#fb923c" }}>
+                  {formatCurrency(saltTotal)} {saltUnderCap ? "≤" : ">"} {formatCurrency(saltCap)}
                 </span>
               </div>
-            </div>
+            </CapCheck>
           </div>
           <p
             style={{ color: "#94a3b8", marginTop: "16px", fontSize: "0.95rem" }}
           >
-            Both caps cleared. 100% of your housing deductions are usable.
+            {interestFullyDeductible && saltUnderCap
+              ? "Both caps cleared. 100% of your housing deductions are usable."
+              : "At least one cap applies, so part of your housing deductions is lost."}
           </p>
         </div>
       </div>
@@ -908,14 +887,14 @@ function TaxTab({
               Without the house:
             </div>
             <div className="row">
-              <span>Your income:</span> <span>$213,000</span>
+              <span>Your income:</span> <span>{formatCurrency(w2Income)}</span>
             </div>
             <div className="row">
               <span>Standard deduction (everyone gets this):</span>{" "}
-              <span>- $16,100</span>
+              <span>- {formatCurrency(standardDeduction)}</span>
             </div>
             <div className="row total">
-              <span>Taxable income:</span> <span>$196,900</span>
+              <span>Taxable income:</span> <span>{formatCurrency(w2Income - standardDeduction)}</span>
             </div>
             <div className="row" style={{ marginTop: "8px" }}>
               <span>Tax bracket:</span>{" "}
@@ -948,10 +927,10 @@ function TaxTab({
               With the house (Year {selectedYear}):
             </div>
             <div className="row">
-              <span>Your income:</span> <span>$213,000</span>
+              <span>Your income:</span> <span>{formatCurrency(w2Income)}</span>
             </div>
             <div className="row">
-              <span>CA State Tax (SALT):</span> <span>- $16,000</span>
+              <span>CA State Tax (SALT):</span> <span>- {formatCurrency(caStateTax)}</span>
             </div>
             <div className="row">
               <span>Your Property Tax (SALT):</span>{" "}
@@ -961,9 +940,15 @@ function TaxTab({
               <span>Your Mortgage Interest:</span>{" "}
               <span>- {formatCurrency(deductibleInterest)}</span>
             </div>
+            {!itemizes && (
+              <div className="row" style={{ color: "#fbbf24" }}>
+                <span>Itemized total is below the standard deduction:</span>{" "}
+                <span>take the {formatCurrency(standardDeduction)} standard</span>
+              </div>
+            )}
             <div className="row total">
               <span>Taxable income:</span>{" "}
-              <span>{formatCurrency(213000 - totalItemized)}</span>
+              <span>{formatCurrency(w2Income - Math.max(totalItemized, standardDeduction))}</span>
             </div>
           </div>
 

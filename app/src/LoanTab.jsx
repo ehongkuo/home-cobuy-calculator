@@ -1,10 +1,11 @@
 import React from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, PiggyBank } from "lucide-react";
 import { formatCurrency } from "./utils";
 
 function LoanTab({
   purchasePrice,
   downPaymentPercent,
+  cashToClose,
   loanAmount,
   mortgage,
   propertyTaxRate,
@@ -17,6 +18,47 @@ function LoanTab({
 }) {
   return (
     <div className="tab-fade-in">
+      <div className="card" style={{ marginBottom: "16px" }}>
+        <h2>
+          <PiggyBank className="icon" /> Cash Needed Up Front
+        </h2>
+        <div className="cash-to-close">
+          <div className="cash-to-close-totals">
+            <div className="math-step">
+              <span className="math-label">Down Payment ({downPaymentPercent}%):</span>
+              <span className="math-value">{formatCurrency(cashToClose.downPayment)}</span>
+            </div>
+            <div className="math-step">
+              <span className="math-label">Closing Costs (~2%):</span>
+              <span className="math-value">{formatCurrency(cashToClose.closingCosts)}</span>
+            </div>
+            <div className="math-step total-math">
+              <span className="math-label">Total Cash to Close:</span>
+              <span className="math-value highlight-large">{formatCurrency(cashToClose.total)}</span>
+            </div>
+          </div>
+          <div className="cash-to-close-split">
+            {[
+              ["dad", "Dad"],
+              ["user", "You"],
+              ["brother", "Brother"],
+            ].map(([key, label]) => {
+              const person = cashToClose.byPerson[key];
+              return (
+                <div key={key} className={`cash-person ${key === "user" ? "cash-person-you" : ""}`}>
+                  <div className="cash-person-label">
+                    {label} ({Math.round(person.share * 100)}%)
+                  </div>
+                  <div className="cash-person-total">{formatCurrency(person.total)}</div>
+                  <div className="cash-person-detail">
+                    {formatCurrency(person.downPayment)} down + {formatCurrency(person.closingCosts)} closing
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
       <div className="grid">
         <div className="card">
           <h2>How Payments Are Derived</h2>
@@ -36,15 +78,15 @@ function LoanTab({
             </div>
             <hr />
             <div className="math-step">
-              <span className="math-label">Property Tax ({propertyTaxRate}% / 12):</span>
+              <span className="math-label">Property Tax ({propertyTaxRate}%, Year {selectedYear}):</span>
               <span className="math-value">{formatCurrency(propertyTax)}</span>
             </div>
             <div className="math-step">
-              <span className="math-label">HOA (Zillow Unit 307):</span>
+              <span className="math-label">HOA (Year {selectedYear}):</span>
               <span className="math-value">{formatCurrency(hoa)}</span>
             </div>
             <div className="math-step total-math">
-              <span className="math-label">Total Monthly Cost:</span>
+              <span className="math-label">Total Monthly Cost (Year {selectedYear}):</span>
               <span className="math-value highlight-large">
                 {formatCurrency(propertyCosts)}
               </span>

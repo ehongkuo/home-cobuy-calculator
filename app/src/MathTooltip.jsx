@@ -20,8 +20,11 @@ const MathTooltip = ({ children, ledger }) => {
     <>
       <span 
         ref={spanRef}
+        tabIndex={ledger ? 0 : undefined}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        onFocus={() => setIsHovered(true)}
+        onBlur={() => setIsHovered(false)}
         style={{ borderBottom: '1px dotted rgba(255,255,255,0.4)', cursor: 'help' }}
       >
         {children}

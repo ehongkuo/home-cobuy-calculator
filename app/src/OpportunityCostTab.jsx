@@ -1,7 +1,17 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import MathTooltip from "./MathTooltip";
 import { formatCurrency } from "./utils";
-import { EditableSlider } from "./EditableSlider";
+import {
+  BUYER_CLOSING_COST_RATE,
+  EQUITY_SPLIT,
+  calculateNetWorthComparison,
+  calculateScheduleATaxSavings,
+  TAX_ASSUMPTIONS,
+  valueInYear,
+} from "./financialModel";
+
+const buyerClosingCostsPercent = BUYER_CLOSING_COST_RATE;
+const userEquityShare = EQUITY_SPLIT.user;
 
 function OpportunityCostTab({
   purchasePrice,
@@ -19,83 +29,73 @@ function OpportunityCostTab({
   selectedYear,
   amortizationSchedule,
   rentInflation,
-  setRentInflation,
+  takeHome,
+  nonHousingExpenses,
+  stockMarketReturn,
+  equivalentRent,
+  includeTaxSavings = true,
 }) {
-  const [stockMarketReturn, setStockMarketReturn] = useState(7.0);
-  const [equivalentRent, setEquivalentRent] = useState(3300);
 
-  // Constants
+  // ── Constants ──
   const STARTING_CASH = 100000;
   const downPaymentTotal = purchasePrice - loanAmount;
-  const buyerClosingCostsPercent = 0.02;
   const sellerClosingCostsPercent = 0.06;
 
-  // Ownership shares
-  const userEquityShare = 0.25;
   const userCashFlowShareOwner = 0.25;
   const userCashFlowShareRental = 0.25;
   const userTaxShareRental = 0.50;
 
-  // Tax constants
-  const tcjaLimit = 750000;
-  const caStateTax = 16000;
-  const saltCap = 40400;
-  const standardDeduction = 16100;
-  const marginalRate = 0.24;
+  const marginalRate = TAX_ASSUMPTIONS.marginalRate;
   const buildingRatio = 0.8;
   const depreciationBasis = purchasePrice * buildingRatio;
   const annualDepreciation = depreciationBasis / 27.5;
 
   const data = useMemo(() => {
-    // 1. Initial Investment
     const initialDownPaymentUser = downPaymentTotal * userEquityShare;
     const initialClosingCostsUser =
       purchasePrice * buyerClosingCostsPercent * userEquityShare;
     const totalInitialSunkUser =
       initialDownPaymentUser + initialClosingCostsUser;
 
-    // Track Stock Market Portfolio value month by month (Rent Side)
-    let stockPortfolio = STARTING_CASH;
-    const monthlyHouseAppreciation = Math.pow(1 + appreciation / 100, 1 / 12) - 1;
-    // Use true APY (CAGR) for stock market, which is more accurate to reality than dividing APR by 12.
-    const monthlyStockRate = Math.pow(1 + stockMarketReturn / 100, 1 / 12) - 1;
+    const monthlyStockRate =
+      Math.pow(1 + stockMarketReturn / 100, 1 / 12) - 1;
+    const availableForHousing = takeHome - nonHousingExpenses;
 
-    // Track Liquid Cash value month by month (Buy Side)
-    let buyLiquidCash = STARTING_CASH - totalInitialSunkUser;
+    let buyBrokerage = STARTING_CASH - totalInitialSunkUser;
+    let rentBrokerage = STARTING_CASH;
 
-    let totalHouseCashBurned = 0;
-    let totalRentCashBurned = 0;
-    let finalMonthlyHouseCost = 0;
-    let finalMonthlyRentCost = 0;
-    
-    let buyCumulativeSavings = 0;
-    let rentCumulativeSavings = 0;
+    let totalBuySurplusDeposited = 0;
+    let totalRentSurplusDeposited = 0;
+    let totalBuyHousingSpent = 0;
+    let totalRentHousingSpent = 0;
 
-    let prevYearStockPortfolio = STARTING_CASH;
-    let prevYearBuyLiquidCash = STARTING_CASH - initialDownPaymentUser - initialClosingCostsUser;
-    let prevYearCumulativeSavingsBuy = 0;
-    let prevYearCumulativeSavingsRent = 0;
-    
-    let prevYearNetWorthBuy = STARTING_CASH;
-    let prevYearNetWorthRent = STARTING_CASH;
-    
-    const prevYearRemainingLoan = selectedYear > 1 
-      ? (amortizationSchedule[selectedYear - 2]?.balance || 0)
-      : loanAmount;
+    // Final month snapshot
+    let finalBuyHousingCost = 0;
+    let finalBuySurplus = 0;
+    let finalRentHousingCost = 0;
+    let finalRentSurplus = 0;
+    let finalMortgageShare = 0;
+    let finalHoaShare = 0;
+    let finalPropTaxShare = 0;
+    let finalTaxShield = 0;
+    let finalRentIncome = 0;
+    let finalIsRental = false;
+    let finalTenantRent = 0;
+    let finalOpExShare = 0;
+    let finalRentalTaxImpact = 0;
 
-    // Loop through every month up to selectedYear
     for (let m = 1; m <= selectedYear * 12; m++) {
-      const yearIndex = Math.floor((m - 1) / 12); // 0-indexed year
-      const currentYear = yearIndex + 1; // 1-indexed year
+      const yearIndex = Math.floor((m - 1) / 12);
+      const currentYear = yearIndex + 1;
       const isRental = currentYear > moveOutYear;
 
-      // --- HOUSE COSTS FOR THIS MONTH ---
-      const currentHOA = baseHOA * Math.pow(1 + hoaInflation / 100, yearIndex);
-      const currentTaxAnnual =
-        basePropertyTaxAnnual * Math.pow(1.02, yearIndex);
+      const currentHOA = valueInYear(baseHOA, hoaInflation, currentYear);
+      const currentTaxAnnual = valueInYear(
+        basePropertyTaxAnnual,
+        2,
+        currentYear,
+      );
       const currentTaxMonthly = currentTaxAnnual / 12;
-
-      const totalPropertyCosts = mortgage + currentHOA + currentTaxMonthly;
 
       const yearData = amortizationSchedule[yearIndex] || {
         interest: 0,
@@ -103,50 +103,55 @@ function OpportunityCostTab({
       };
       const totalInterestForYear = yearData.interest;
 
-      let userNetCostThisMonth = 0;
+      let buyHousingCost = 0;
+      let monthMortgageShare = 0;
+      let monthHoaShare = 0;
+      let monthPropTaxShare = 0;
+      let monthTaxShield = 0;
+      let monthRentIncome = 0;
+      let monthTenantRent = 0;
+      let monthOpExShare = 0;
+      let monthRentalTaxImpact = 0;
 
       if (!isRental) {
-        // Owner Occupied Math
-        const userShareOfCosts = totalPropertyCosts * userCashFlowShareOwner;
+        monthMortgageShare = mortgage * userCashFlowShareOwner;
+        monthHoaShare = currentHOA * userCashFlowShareOwner;
+        monthPropTaxShare = currentTaxMonthly * userCashFlowShareOwner;
+
         const totalRentPot = userRent + brotherRent;
-        const userRentIncome = totalRentPot * 0.25;
+        monthRentIncome = totalRentPot * 0.25;
 
-        // Schedule A Tax Shield
-        const userShareOfInterest = totalInterestForYear / 2; // User and brother split mortgage 50/50
-        const userShareOfPropertyTax = currentTaxAnnual / 2;
-        const userShareOfLoan = loanAmount / 2;
-        const deductibleInterest =
-          userShareOfLoan <= tcjaLimit
-            ? userShareOfInterest
-            : userShareOfInterest * (tcjaLimit / userShareOfLoan);
-        const saltTotal = caStateTax + userShareOfPropertyTax;
-        const deductiblePropertyTax =
-          saltTotal <= saltCap
-            ? userShareOfPropertyTax
-            : Math.max(0, saltCap - caStateTax);
-        const totalItemized =
-          caStateTax + deductiblePropertyTax + deductibleInterest;
-        const incrementalDeduction = Math.max(
-          0,
-          totalItemized - standardDeduction,
-        );
-        const userTaxShieldScheduleA =
-          (incrementalDeduction * marginalRate) / 12;
+        monthTaxShield = includeTaxSavings
+          ? calculateScheduleATaxSavings({
+              annualInterest: totalInterestForYear,
+              annualPropertyTax: currentTaxAnnual,
+              loanAmount,
+            }).monthlyTaxSavings
+          : 0;
 
-        userNetCostThisMonth =
-          userShareOfCosts + userRent - userRentIncome - userTaxShieldScheduleA;
+        buyHousingCost =
+          monthMortgageShare +
+          monthHoaShare +
+          monthPropTaxShare +
+          userRent -
+          monthRentIncome -
+          monthTaxShield;
       } else {
-        // Rental Math (LLC REPS)
-        const inflatedTenantRent =
-          tenantRent * Math.pow(1 + rentInflation / 100, yearIndex);
-        const currentOpExAnnual = purchasePrice * (operatingExpenseRate / 100);
-        const currentOpExMonthly = currentOpExAnnual / 12;
+        const inflatedTenantRent = valueInYear(
+          tenantRent,
+          rentInflation,
+          currentYear,
+        );
+        monthTenantRent = inflatedTenantRent;
+        const currentOpExAnnual =
+          purchasePrice * (operatingExpenseRate / 100);
+        monthOpExShare = (currentOpExAnnual / 12) * userCashFlowShareRental;
 
-        const userShareOfCosts =
-          (totalPropertyCosts + currentOpExMonthly) * userCashFlowShareRental;
-        const userRentIncome = inflatedTenantRent * userCashFlowShareRental;
+        monthMortgageShare = mortgage * userCashFlowShareRental;
+        monthHoaShare = currentHOA * userCashFlowShareRental;
+        monthPropTaxShare = currentTaxMonthly * userCashFlowShareRental;
+        monthRentIncome = inflatedTenantRent * userCashFlowShareRental;
 
-        // LLC Tax Shield (Using Tax Share)
         const rentalInterest = totalInterestForYear * userTaxShareRental;
         const rentalPropertyTax = currentTaxAnnual * userTaxShareRental;
         const rentalHOA = currentHOA * 12 * userTaxShareRental;
@@ -161,150 +166,126 @@ function OpportunityCostTab({
           userShareOfDepreciation +
           userShareOfOperatingExpenses;
 
-        // IRS sees brothers receiving 100% of rent (50% each)
         const annualRentalIncomeTax =
           inflatedTenantRent * 12 * userTaxShareRental;
-        const netRentalIncomeTax = annualRentalIncomeTax - totalRentalDeductions;
-        const monthlyRentalTaxCost = (netRentalIncomeTax * marginalRate) / 12; // negative = savings, positive = cost
+        const netRentalIncomeTax =
+          annualRentalIncomeTax - totalRentalDeductions;
+        monthRentalTaxImpact = includeTaxSavings
+          ? (netRentalIncomeTax * marginalRate) / 12
+          : 0;
 
-        userNetCostThisMonth =
-          userShareOfCosts - userRentIncome + monthlyRentalTaxCost;
+        buyHousingCost =
+          monthMortgageShare +
+          monthHoaShare +
+          monthPropTaxShare +
+          monthOpExShare -
+          monthRentIncome +
+          monthRentalTaxImpact;
       }
 
-      totalHouseCashBurned += userNetCostThisMonth;
-
-      // --- RENTING COSTS FOR THIS MONTH ---
-      const currentEquivalentRent = isRental
+      const rentHousingCost = isRental
         ? 0
-        : equivalentRent * Math.pow(1 + rentInflation / 100, yearIndex);
-      totalRentCashBurned += currentEquivalentRent;
+        : valueInYear(equivalentRent, rentInflation, currentYear);
 
-      // Compound the portfolios
-      stockPortfolio = stockPortfolio * (1 + monthlyStockRate);
-      buyLiquidCash = buyLiquidCash * (1 + monthlyStockRate);
+      const buySurplus = availableForHousing - buyHousingCost;
+      const rentSurplus = availableForHousing - rentHousingCost;
 
-      // --- PAYCHECK ABSTRACTION (Max Budget) ---
-      const maxBudgetThisMonth = Math.max(userNetCostThisMonth, currentEquivalentRent);
-      
-      // Calculate savings for each path
-      const buySavingsThisMonth = maxBudgetThisMonth - userNetCostThisMonth;
-      const rentSavingsThisMonth = maxBudgetThisMonth - currentEquivalentRent;
+      buyBrokerage = buyBrokerage * (1 + monthlyStockRate) + buySurplus;
+      rentBrokerage = rentBrokerage * (1 + monthlyStockRate) + rentSurplus;
 
-      // Add savings to liquid portfolios
-      buyLiquidCash += buySavingsThisMonth;
-      stockPortfolio += rentSavingsThisMonth;
-      
-      buyCumulativeSavings += buySavingsThisMonth;
-      rentCumulativeSavings += rentSavingsThisMonth;
-
-      if (m === (selectedYear - 1) * 12) {
-        prevYearStockPortfolio = stockPortfolio;
-        prevYearBuyLiquidCash = buyLiquidCash;
-        prevYearCumulativeSavingsBuy = buyCumulativeSavings;
-        prevYearCumulativeSavingsRent = rentCumulativeSavings;
-        
-        // Calculate previous year net worths
-        const prevYearPropertyVal = purchasePrice * Math.pow(1 + appreciation / 100, selectedYear - 1);
-        const prevYearIndex = (selectedYear - 1) - 1; 
-        const prevYearRemainingBalance = prevYearIndex >= 0 && amortizationSchedule.length > 0
-          ? (amortizationSchedule[prevYearIndex]?.balance || 0)
-          : loanAmount;
-        const prevYearGrossEquityTotal = prevYearPropertyVal - prevYearRemainingBalance;
-        prevYearNetWorthBuy = buyLiquidCash + (prevYearGrossEquityTotal * userEquityShare);
-        prevYearNetWorthRent = stockPortfolio;
-      }
+      totalBuySurplusDeposited += buySurplus;
+      totalRentSurplusDeposited += rentSurplus;
+      totalBuyHousingSpent += buyHousingCost;
+      totalRentHousingSpent += rentHousingCost;
 
       if (m === selectedYear * 12) {
-        finalMonthlyHouseCost = userNetCostThisMonth;
-        finalMonthlyRentCost = currentEquivalentRent;
+        finalBuyHousingCost = buyHousingCost;
+        finalBuySurplus = buySurplus;
+        finalRentHousingCost = rentHousingCost;
+        finalRentSurplus = rentSurplus;
+        finalMortgageShare = monthMortgageShare;
+        finalHoaShare = monthHoaShare;
+        finalPropTaxShare = monthPropTaxShare;
+        finalTaxShield = monthTaxShield;
+        finalRentIncome = monthRentIncome;
+        finalIsRental = isRental;
+        finalTenantRent = monthTenantRent;
+        finalOpExShare = monthOpExShare;
+        finalRentalTaxImpact = monthRentalTaxImpact;
       }
     }
 
-    // --- FINAL PAYDAY FOR BUYING ---
+    // Home equity
     const finalPropertyVal =
       purchasePrice * Math.pow(1 + appreciation / 100, selectedYear);
     const yearIndex = Math.min(selectedYear - 1, 29);
-      const remainingLoanTotal = 
-        amortizationSchedule.length > 0
-          ? (amortizationSchedule[yearIndex]?.balance || 0)
-          : loanAmount;
+    const remainingLoanTotal =
+      amortizationSchedule.length > 0
+        ? amortizationSchedule[yearIndex]?.balance || 0
+        : loanAmount;
 
     const grossEquityTotal = finalPropertyVal - remainingLoanTotal;
     const sellerClosingCostsTotal =
       finalPropertyVal * sellerClosingCostsPercent;
 
-    // User's illiquid home equity BEFORE sale
     const userHomeEquity = grossEquityTotal * userEquityShare;
-
-    // User's proceeds IF sold today
     const userNetProceeds =
       (grossEquityTotal - sellerClosingCostsTotal) * userEquityShare;
 
-    // Total Net Worth Calculation
-    const buyNetWorth = buyLiquidCash + userHomeEquity;
-    const buyTotalLiquid = buyLiquidCash + userNetProceeds;
-    const pathAWins = buyTotalLiquid > stockPortfolio;
-    const delta = Math.abs(buyTotalLiquid - stockPortfolio);
-    
-    // --- THIS YEAR'S IMPACT ---
-    const buySavingsThisYear = buyCumulativeSavings - prevYearCumulativeSavingsBuy;
-    const rentSavingsThisYear = rentCumulativeSavings - prevYearCumulativeSavingsRent;
-    
-    const buyMarketReturnsThisYear = (buyLiquidCash - prevYearBuyLiquidCash) - buySavingsThisYear;
-    const rentMarketReturnsThisYear = (stockPortfolio - prevYearStockPortfolio) - rentSavingsThisYear;
-    
-    const currentHomeValueTotal = purchasePrice * Math.pow(1 + appreciation / 100, selectedYear);
-    const prevHomeValueTotal = purchasePrice * Math.pow(1 + appreciation / 100, selectedYear - 1);
-    
-    const appreciationThisYearTotal = currentHomeValueTotal - prevHomeValueTotal;
-    const principalPaydownThisYearTotal = prevYearRemainingLoan - remainingLoanTotal;
-    
-    return {
-      STARTING_CASH,
-      stockPortfolio,
-      buyNetWorth,
-      userHomeEquity,
-      userNetProceeds,
-      buyLiquidCash,
-      buyTotalLiquid,
-      buyCumulativeSavings,
-      rentCumulativeSavings,
-      buySavingsThisYear,
-      rentSavingsThisYear,
-      buyMarketReturnsThisYear,
-      rentMarketReturnsThisYear,
-      appreciationThisYearUser: appreciationThisYearTotal * userEquityShare,
-      principalPaydownThisYearUser: principalPaydownThisYearTotal * userEquityShare,
-      cumulativeAppreciationUser: (currentHomeValueTotal - purchasePrice) * userEquityShare,
-      cumulativePrincipalPaydownUser: (loanAmount - remainingLoanTotal) * userEquityShare,
-      prevYearNetWorthBuy,
-      prevYearNetWorthRent,
-      currentHomeValueUser: currentHomeValueTotal * userEquityShare,
-      remainingLoanUser: remainingLoanTotal * userEquityShare,
-      sellerClosingCostsUser: currentHomeValueTotal * 0.06 * userEquityShare,
-      prevYearBuyLiquidCash,
-      prevYearStockPortfolio,
-      buyCumulativeMarketReturns: buyLiquidCash - (STARTING_CASH - initialDownPaymentUser - initialClosingCostsUser + buyCumulativeSavings),
-      rentCumulativeMarketReturns: stockPortfolio - (STARTING_CASH + rentCumulativeSavings),
-      buyDay1Cash: STARTING_CASH - initialDownPaymentUser - initialClosingCostsUser,
-      buyCumulativeProfitOnDay1: (STARTING_CASH - initialDownPaymentUser - initialClosingCostsUser) * (Math.pow(1 + stockMarketReturn / 100, selectedYear) - 1),
-      buyCumulativeProfitOnDeposits: (buyLiquidCash - (STARTING_CASH - initialDownPaymentUser - initialClosingCostsUser + buyCumulativeSavings)) - ((STARTING_CASH - initialDownPaymentUser - initialClosingCostsUser) * (Math.pow(1 + stockMarketReturn / 100, selectedYear) - 1)),
-      rentDay1Cash: STARTING_CASH,
-      rentCumulativeProfitOnDay1: STARTING_CASH * (Math.pow(1 + stockMarketReturn / 100, selectedYear) - 1),
-      rentCumulativeProfitOnDeposits: (stockPortfolio - (STARTING_CASH + rentCumulativeSavings)) - (STARTING_CASH * (Math.pow(1 + stockMarketReturn / 100, selectedYear) - 1)),
-      totalHouseCashBurned,
-      totalRentCashBurned,
+    const {
+      buyLiquidNetWorth,
+      rentNetWorth,
       pathAWins,
       delta,
-      remainingLoanTotal,
-      finalMonthlyHouseCost,
-      finalMonthlyRentCost,
-      finalMaxBudget: Math.max(finalMonthlyHouseCost, finalMonthlyRentCost),
+    } = calculateNetWorthComparison({
+      buyBrokerage,
+      userNetProceeds,
+      rentBrokerage,
+    });
+
+    const buyCumulativeReturns =
+      buyBrokerage -
+      (STARTING_CASH - totalInitialSunkUser) -
+      totalBuySurplusDeposited;
+    const rentCumulativeReturns =
+      rentBrokerage - STARTING_CASH - totalRentSurplusDeposited;
+
+    return {
+      STARTING_CASH,
+      availableForHousing,
       initialDownPaymentUser,
       initialClosingCostsUser,
-      purchasePrice,
-      appreciation,
-      userEquityShare,
+      totalInitialSunkUser,
+      finalBuyHousingCost,
+      finalBuySurplus,
+      finalRentHousingCost,
+      finalRentSurplus,
+      finalMortgageShare,
+      finalHoaShare,
+      finalPropTaxShare,
+      finalTaxShield,
+      finalRentIncome,
+      finalIsRental,
+      finalTenantRent,
+      finalOpExShare,
+      finalRentalTaxImpact,
+      totalBuyHousingSpent,
+      totalRentHousingSpent,
+      totalBuySurplusDeposited,
+      totalRentSurplusDeposited,
+      buyBrokerage,
+      rentBrokerage,
+      buyCumulativeReturns,
+      rentCumulativeReturns,
+      userHomeEquity,
+      userNetProceeds,
+      sellerClosingCostsUser: sellerClosingCostsTotal * userEquityShare,
+      currentHomeValueUser: finalPropertyVal * userEquityShare,
+      remainingLoanUser: remainingLoanTotal * userEquityShare,
+      buyLiquidNetWorth,
+      rentNetWorth,
+      pathAWins,
+      delta,
     };
   }, [
     purchasePrice,
@@ -324,68 +305,88 @@ function OpportunityCostTab({
     equivalentRent,
     rentInflation,
     amortizationSchedule,
+    takeHome,
+    nonHousingExpenses,
+    downPaymentTotal,
+    annualDepreciation,
+    includeTaxSavings,
+    marginalRate,
   ]);
+
+  // ── Reusable line item ──
+  const Line = ({ label, amount, bold, dim, tooltip }) => {
+    const isPos = amount >= 0;
+    const display = isPos
+      ? formatCurrency(amount)
+      : `-${formatCurrency(Math.abs(amount))}`;
+
+    const valueEl = (
+      <span className={isPos ? "positive" : "negative"} style={dim ? { opacity: 0.5 } : undefined}>
+        {display}
+      </span>
+    );
+
+    return (
+      <div className="opp-cf-line">
+        <span className={bold ? "opp-cf-label-bold" : "opp-cf-label"}>
+          {label}
+        </span>
+        {tooltip ? (
+          <MathTooltip ledger={tooltip}>{valueEl}</MathTooltip>
+        ) : (
+          valueEl
+        )}
+      </div>
+    );
+  };
+
+  // Budget bar percentage
+  const buyHousingPct = Math.min(
+    100,
+    Math.max(0, (data.finalBuyHousingCost / data.availableForHousing) * 100)
+  );
+  const rentHousingPct = Math.min(
+    100,
+    Math.max(0, (data.finalRentHousingCost / data.availableForHousing) * 100)
+  );
 
   return (
     <div className="tab-fade-in">
-      <div className="card controls-card" style={{ paddingBottom: "16px" }}>
-        <h2>⚖️ Buy vs. Rent (Opportunity Cost)</h2>
-        <p className="subtitle">
-          This simulates what happens if you started with{" "}
-          <strong>{formatCurrency(data.STARTING_CASH)}</strong> liquid cash
-          today.
-        </p>
-
-        <div
-          className="sliders-wrapper"
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            marginTop: "32px",
-            gap: "20px",
-          }}
-        >
-          <EditableSlider
-            label="Market Return (S&P 500)"
-            value={stockMarketReturn}
-            setValue={setStockMarketReturn}
-            min={0}
-            max={15}
-            step={0.5}
-            format="percentage"
-          />
-          <EditableSlider
-            label="Equivalent Rent"
-            value={equivalentRent}
-            setValue={setEquivalentRent}
-            min={500}
-            max={5000}
-            step={50}
-            format="currency/mo"
-          />
-          <EditableSlider
-            label="Rent Inflation"
-            value={rentInflation}
-            setValue={setRentInflation}
-            min={0}
-            max={10}
-            step={0.5}
-            format="percentage"
-          />
+      {/* ── Shared Budget Banner ── */}
+      <div className="opp-budget-banner">
+        <div className="opp-budget-flow">
+          <div className="opp-budget-step">
+            <span className="opp-budget-step-label">Take-Home</span>
+            <span className="opp-budget-step-value">{formatCurrency(takeHome)}</span>
+          </div>
+          <span className="opp-budget-arrow">→</span>
+          <div className="opp-budget-step">
+            <span className="opp-budget-step-label">Expenses</span>
+            <span className="opp-budget-step-value negative">-{formatCurrency(nonHousingExpenses)}</span>
+          </div>
+          <span className="opp-budget-arrow">→</span>
+          <div className="opp-budget-step opp-budget-step-highlight">
+            <span className="opp-budget-step-label">Available</span>
+            <span className="opp-budget-step-value" style={{ color: "var(--accent-teal)", fontSize: "1.2rem" }}>
+              {formatCurrency(data.availableForHousing)}/mo
+            </span>
+          </div>
+        </div>
+        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "6px" }}>
+          Same in both paths — the only question is how much goes to housing vs. investing
         </div>
       </div>
 
-      <div
-        className="header"
-        style={{ marginTop: "32px", marginBottom: "16px" }}
-      >
+      {/* ── Year Header ── */}
+      <div style={{ textAlign: "center", margin: "28px 0 16px" }}>
         <h2 style={{ fontSize: "1.8rem", margin: 0 }}>
           Year {selectedYear} Showdown
         </h2>
       </div>
 
+      {/* ── Side-by-Side Comparison ── */}
       <div className="grid">
+        {/* ── PATH A: BUY ── */}
         <div
           className={`card hover-card ${data.pathAWins ? "" : "disabled-card"}`}
           style={{
@@ -398,130 +399,126 @@ function OpportunityCostTab({
             className="card-header"
             style={{ color: data.pathAWins ? "#4ade80" : "inherit" }}
           >
-            Path A: Buy the Condo
+            🏠 Path A: Buy the Condo
           </div>
           <div className="card-body">
-            {/* TOP: This Year's Waterfall */}
-            <div style={{ background: "rgba(0,0,0,0.2)", padding: "16px", borderRadius: "12px", marginBottom: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ fontWeight: "bold", marginBottom: "12px", color: "#a855f7" }}>Year {selectedYear} Waterfall:</div>
-              <div className="row" style={{ fontSize: "0.95rem" }}>
-                <span>Starting Net Worth (Jan 1):</span>
-                <span className="positive">
-                  <MathTooltip ledger={`Net Worth at the end of Year ${selectedYear - 1}.\n(Or Adjusted Day-1 Net Worth if Year 1)`}>
-                    {formatCurrency(data.prevYearNetWorthBuy)}
-                  </MathTooltip>
-                </span>
-              </div>
-              <div className="row" style={{ fontSize: "0.9rem", color: "#94a3b8", paddingLeft: "16px", marginTop: "8px" }}>
-                <span>+ Market Returns this year:</span>
-                <span className={data.buyMarketReturnsThisYear >= 0 ? "positive" : "negative"}>
-                  <MathTooltip ledger={`  Interest on Start of Year Balance:\n    ${formatCurrency(data.prevYearBuyLiquidCash)} × ${stockMarketReturn}% APY = ${formatCurrency(data.prevYearBuyLiquidCash * (stockMarketReturn / 100))}\n\n  Interest on New Monthly Deposits:\n    ${formatCurrency(data.buySavingsThisYear)} deposited over 12 months = ${formatCurrency(data.buyMarketReturnsThisYear - (data.prevYearBuyLiquidCash * (stockMarketReturn / 100)))}\n----------------------------------------\n= Market Returns this year: ${formatCurrency(data.buyMarketReturnsThisYear)}`}>
-                    {data.buyMarketReturnsThisYear >= 0 ? "+" : ""}{formatCurrency(data.buyMarketReturnsThisYear)}
-                  </MathTooltip>
-                </span>
-              </div>
-              <div className="row" style={{ fontSize: "0.9rem", color: "#94a3b8", paddingLeft: "16px" }}>
-                <span>+ Housing Savings this year:</span>
-                <span className="positive">
-                  <MathTooltip ledger={`  Example from final month of Year ${selectedYear}:\n    Max Budget: ${formatCurrency(data.finalMaxBudget)}\n  - Buy Cost:  -${formatCurrency(data.finalMonthlyHouseCost)}\n  = Savings:    ${formatCurrency(data.finalMaxBudget - data.finalMonthlyHouseCost)}\n\n  Average Monthly Savings (This Year): ${formatCurrency(data.buySavingsThisYear / 12)}\n* Months Elapsed This Year:            12\n----------------------------------------\n= Housing Savings this year:           ${formatCurrency(data.buySavingsThisYear)}`}>
-                    +{formatCurrency(data.buySavingsThisYear)}
-                  </MathTooltip>
-                </span>
-              </div>
-              <div className="row" style={{ fontSize: "0.9rem", color: "#94a3b8", paddingLeft: "16px" }}>
-                <span>+ Property Appreciation this year:</span>
-                <span className={data.appreciationThisYearUser >= 0 ? "positive" : "negative"}>
-                  <MathTooltip ledger={`  Year ${selectedYear} Property Value:    ${formatCurrency(data.currentHomeValueUser / data.userEquityShare)}\n- Year ${selectedYear - 1} Property Value:    -${formatCurrency((data.currentHomeValueUser - data.appreciationThisYearUser) / data.userEquityShare)}\n= Total Appreciation:        ${formatCurrency(data.appreciationThisYearUser / data.userEquityShare)}\n* Your Equity Share:         ${data.userEquityShare * 100}%\n----------------------------------------\n= Appreciation this year:    ${formatCurrency(data.appreciationThisYearUser)}`}>
-                    {data.appreciationThisYearUser >= 0 ? "+" : ""}{formatCurrency(data.appreciationThisYearUser)}
-                  </MathTooltip>
-                </span>
-              </div>
-              <div className="row" style={{ fontSize: "0.9rem", color: "#94a3b8", paddingLeft: "16px", marginBottom: "8px" }}>
-                <span>+ Principal Paydown this year:</span>
-                <span className="positive">
-                  <MathTooltip ledger={`  Year ${selectedYear - 1} Loan Balance:    ${formatCurrency(data.remainingLoanTotal + (data.principalPaydownThisYearUser / data.userEquityShare))}\n- Year ${selectedYear} Loan Balance:    -${formatCurrency(data.remainingLoanTotal)}\n= Total Paydown this year:   ${formatCurrency(data.principalPaydownThisYearUser / data.userEquityShare)}\n* Your Equity Share:         ${data.userEquityShare * 100}%\n----------------------------------------\n= Paydown this year:         ${formatCurrency(data.principalPaydownThisYearUser)}`}>
-                    +{formatCurrency(data.principalPaydownThisYearUser)}
-                  </MathTooltip>
-                </span>
-              </div>
-              <div className="row" style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "8px" }}>
-                <span style={{ fontWeight: "bold", fontSize: "0.95rem" }}>Ending Net Worth (Dec 31):</span>
-                <span className="positive" style={{ fontWeight: "bold", fontSize: "0.95rem" }}>
-                  <MathTooltip ledger={`Matches Total Net Worth below.`}>
-                    {formatCurrency(data.buyNetWorth)}
-                  </MathTooltip>
-                </span>
-              </div>
-            </div>
-
-            {/* BOTTOM: Total Accumulated Wealth */}
-            <div style={{ background: "rgba(0,0,0,0.2)", padding: "16px", borderRadius: "12px", marginBottom: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ fontWeight: "bold", marginBottom: "12px", color: "#2dd4bf" }}>Total Accumulated Wealth:</div>
-              <div className="row">
-                <span>Liquid Cash Portfolio:</span>
-                <span className={data.buyLiquidCash >= 0 ? "positive" : "negative"}>
-                  <MathTooltip ledger={`  Starting Cash:             ${formatCurrency(data.STARTING_CASH)}\n- Down Payment:            -${formatCurrency(data.initialDownPaymentUser)}\n- Closing Costs:           -${formatCurrency(data.initialClosingCostsUser)}\n----------------------------------------\n= Day 1 Liquid Cash:         ${formatCurrency(data.STARTING_CASH - data.initialDownPaymentUser - data.initialClosingCostsUser)}\n\n+ Cumulative Savings:      +${formatCurrency(data.buyCumulativeSavings)}\n+ Cumulative Returns:      +${formatCurrency(data.buyCumulativeMarketReturns)}\n----------------------------------------\n= Current Liquid Cash:       ${formatCurrency(data.buyLiquidCash)}`}>
-                    {formatCurrency(data.buyLiquidCash)}
-                  </MathTooltip>
-                </span>
-              </div>
-              <div className="row" style={{ marginTop: "8px" }}>
-                <span>Home Equity (If Sold Today):</span>
-                <span className="positive">
-                  <MathTooltip ledger={`  Current Gross Equity:      ${formatCurrency(data.userHomeEquity)}\n- Seller Closing Costs (6%):-${formatCurrency(data.sellerClosingCostsUser)}\n----------------------------------------\n= Net Proceeds If Sold:      ${formatCurrency(data.userNetProceeds)}`}>
-                    {formatCurrency(data.userNetProceeds)}
-                  </MathTooltip>
-                </span>
-              </div>
-              <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "12px 0" }} />
-              <div className="row total">
-                <span style={{ fontSize: "1.1rem" }}>Total Net Worth:</span>
-                <span className="positive" style={{ fontSize: "1.3rem" }}>
-                  <MathTooltip ledger={`  Liquid Cash:          ${formatCurrency(data.buyLiquidCash)}\n+ Net Proceeds if Sold: ${formatCurrency(data.userNetProceeds)}\n--------------------------------\n= Total Net Worth:      ${formatCurrency(data.buyTotalLiquid)}`}>
-                    {formatCurrency(data.buyTotalLiquid)}
-                  </MathTooltip>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: "rgba(0,0,0,0.2)",
-              padding: "12px",
-              borderRadius: "8px",
-              marginTop: "16px",
-            }}
-          >
-            <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
-              Monthly Reality (Year {selectedYear}):
-            </div>
-            <div className="row">
-              <span>Phase:</span>{" "}
-              <span style={{ color: "#e2e8f0" }}>
-                {selectedYear > moveOutYear ? "Rental (LLC)" : "Owner-Occupied"}
+            {/* Hero number */}
+            <div className="opp-hero">
+              <span className="opp-hero-label">Monthly to Brokerage</span>
+              <span className={`opp-hero-value ${data.finalBuySurplus >= 0 ? "opp-surplus-positive" : "opp-surplus-negative"}`}>
+                {data.finalBuySurplus >= 0 ? "+" : ""}{formatCurrency(data.finalBuySurplus)}/mo
               </span>
             </div>
-            <div className="row">
-              <span>Current Monthly Net Cost:</span>{" "}
-              <span
-                className={
-                  data.finalMonthlyHouseCost <= 0 ? "positive" : "negative"
+
+            {/* Budget bar */}
+            <div className="opp-bar-container">
+              <div className="opp-bar-track">
+                <div
+                  className="opp-bar-fill opp-bar-housing"
+                  style={{ width: `${buyHousingPct}%` }}
+                />
+                <div
+                  className="opp-bar-fill opp-bar-invest"
+                  style={{ width: `${Math.max(0, 100 - buyHousingPct)}%` }}
+                />
+              </div>
+              <div className="opp-bar-labels">
+                <span><span style={{ color: "var(--negative)" }}>■</span> Housing: {formatCurrency(data.finalBuyHousingCost)}</span>
+                <span><span style={{ color: "var(--accent-teal)" }}>■</span> Invest: {formatCurrency(Math.max(0, data.finalBuySurplus))}</span>
+              </div>
+            </div>
+
+            {/* Housing cost breakdown */}
+            <div className="opp-section" style={{ marginTop: "12px" }}>
+              <div className="opp-section-title" style={{ color: "#a855f7" }}>
+                {data.finalIsRental ? "Rental Costs" : "Housing Costs"} — Year {selectedYear}
+              </div>
+
+              <Line
+                label="Mortgage (25% share)"
+                amount={-data.finalMortgageShare}
+                tooltip={`Total mortgage: ${formatCurrency(mortgage)}/mo\nYour 25%: ${formatCurrency(data.finalMortgageShare)}`}
+              />
+              <Line
+                label="HOA (25% share)"
+                amount={-data.finalHoaShare}
+                tooltip={`HOA inflates ${hoaInflation}%/yr\nYear ${selectedYear}: ${formatCurrency(data.finalHoaShare)}`}
+              />
+              <Line
+                label="Property Tax (25% share)"
+                amount={-data.finalPropTaxShare}
+                tooltip={`Prop 13: inflates 2%/yr\nYear ${selectedYear}: ${formatCurrency(data.finalPropTaxShare)}`}
+              />
+              {data.finalIsRental && data.finalOpExShare > 0 && (
+                <Line
+                  label="Operating Expenses (25%)"
+                  amount={-data.finalOpExShare}
+                />
+              )}
+              {!data.finalIsRental && (
+                <Line label="Your Rent to Parents" amount={-userRent} />
+              )}
+              <Line
+                label={data.finalIsRental ? "Tenant Income (25%)" : "Rent Pot Back (25%)"}
+                amount={data.finalRentIncome}
+                tooltip={
+                  data.finalIsRental
+                    ? `Tenant pays ${formatCurrency(data.finalTenantRent)}/mo\nYour 25%: ${formatCurrency(data.finalRentIncome)}`
+                    : `Rent pot: ${formatCurrency(userRent + brotherRent)}/mo\nYour 25% back: ${formatCurrency(data.finalRentIncome)}`
                 }
-              >
-                {data.finalMonthlyHouseCost <= 0 ? "+" : "-"}
-                {formatCurrency(Math.abs(data.finalMonthlyHouseCost))}/mo
-              </span>
+              />
+              {!data.finalIsRental && data.finalTaxShield > 0 && (
+                <Line
+                  label="Tax Shield"
+                  amount={data.finalTaxShield}
+                  tooltip={`Schedule A: incremental deductions above standard deduction × ${marginalRate * 100}%\nMonthly: ${formatCurrency(data.finalTaxShield)}`}
+                />
+              )}
+              {data.finalIsRental && includeTaxSavings && (
+                <Line
+                  label={data.finalRentalTaxImpact <= 0 ? "Tax Shield (LLC)" : "Tax Liability"}
+                  amount={-data.finalRentalTaxImpact}
+                />
+              )}
+
+              <div className="opp-cf-divider" />
+              <Line
+                label="= Net Housing Cost"
+                amount={-data.finalBuyHousingCost}
+                bold
+              />
             </div>
-            <div className="row">
-              <span>Cumulative House Cash Burned:</span>{" "}
-              <span className="negative">
-                -{formatCurrency(data.totalHouseCashBurned)}
-              </span>
+
+            {/* Cumulative Wealth */}
+            <div className="opp-section" style={{ marginTop: "12px" }}>
+              <div className="opp-section-title" style={{ color: "#2dd4bf" }}>
+                Net Worth — Year {selectedYear}
+              </div>
+
+              <Line
+                label="Brokerage Account"
+                amount={data.buyBrokerage}
+                tooltip={`Day 1: ${formatCurrency(data.STARTING_CASH - data.totalInitialSunkUser)}\n+ Deposited: ${formatCurrency(data.totalBuySurplusDeposited)}\n+ Market Returns: ${formatCurrency(data.buyCumulativeReturns)}\n= ${formatCurrency(data.buyBrokerage)}`}
+              />
+              <Line
+                label="Home Equity (net of 6% sale)"
+                amount={data.userNetProceeds}
+                tooltip={`Home Value (25%): ${formatCurrency(data.currentHomeValueUser)}\n- Loan (25%): ${formatCurrency(data.remainingLoanUser)}\n- Closing (6%): ${formatCurrency(data.sellerClosingCostsUser)}\n= ${formatCurrency(data.userNetProceeds)}`}
+              />
+              <div className="opp-cf-divider" />
+              <div className="opp-cf-line">
+                <span className="opp-cf-label-bold" style={{ fontSize: "1.05rem" }}>
+                  Total Net Worth
+                </span>
+                <span className="positive" style={{ fontSize: "1.3rem", fontWeight: 700 }}>
+                  {formatCurrency(data.buyLiquidNetWorth)}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
+        {/* ── PATH B: RENT ── */}
         <div
           className={`card hover-card ${!data.pathAWins ? "" : "disabled-card"}`}
           style={{
@@ -534,93 +531,82 @@ function OpportunityCostTab({
             className="card-header"
             style={{ color: !data.pathAWins ? "#4ade80" : "inherit" }}
           >
-            Path B: Rent & Invest
+            📈 Path B: Rent & Invest
           </div>
           <div className="card-body">
-            {/* TOP: This Year's Waterfall */}
-            <div style={{ background: "rgba(0,0,0,0.2)", padding: "16px", borderRadius: "12px", marginBottom: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ fontWeight: "bold", marginBottom: "12px", color: "#a855f7" }}>Year {selectedYear} Waterfall:</div>
-              <div className="row" style={{ fontSize: "0.95rem" }}>
-                <span>Starting Net Worth (Jan 1):</span>
-                <span className="positive">
-                  <MathTooltip ledger={`Net Worth at the end of Year ${selectedYear - 1}.`}>
-                    {formatCurrency(data.prevYearNetWorthRent)}
-                  </MathTooltip>
-                </span>
+            {/* Hero number */}
+            <div className="opp-hero">
+              <span className="opp-hero-label">Monthly to Brokerage</span>
+              <span className={`opp-hero-value ${data.finalRentSurplus >= 0 ? "opp-surplus-positive" : "opp-surplus-negative"}`}>
+                {data.finalRentSurplus >= 0 ? "+" : ""}{formatCurrency(data.finalRentSurplus)}/mo
+              </span>
+            </div>
+
+            {/* Budget bar */}
+            <div className="opp-bar-container">
+              <div className="opp-bar-track">
+                <div
+                  className="opp-bar-fill opp-bar-housing"
+                  style={{ width: `${rentHousingPct}%` }}
+                />
+                <div
+                  className="opp-bar-fill opp-bar-invest"
+                  style={{ width: `${Math.max(0, 100 - rentHousingPct)}%` }}
+                />
               </div>
-              <div className="row" style={{ fontSize: "0.9rem", color: "#94a3b8", paddingLeft: "16px", marginTop: "8px" }}>
-                <span>+ Market Returns this year:</span>
-                <span className={data.rentMarketReturnsThisYear >= 0 ? "positive" : "negative"}>
-                  <MathTooltip ledger={`  Interest on Start of Year Balance:\n    ${formatCurrency(data.prevYearStockPortfolio)} × ${stockMarketReturn}% APY = ${formatCurrency(data.prevYearStockPortfolio * (stockMarketReturn / 100))}\n\n  Interest on New Monthly Deposits:\n    ${formatCurrency(data.rentSavingsThisYear)} deposited over 12 months = ${formatCurrency(data.rentMarketReturnsThisYear - (data.prevYearStockPortfolio * (stockMarketReturn / 100)))}\n----------------------------------------\n= Market Returns this year: ${formatCurrency(data.rentMarketReturnsThisYear)}`}>
-                    {data.rentMarketReturnsThisYear >= 0 ? "+" : ""}{formatCurrency(data.rentMarketReturnsThisYear)}
-                  </MathTooltip>
-                </span>
-              </div>
-              <div className="row" style={{ fontSize: "0.9rem", color: "#94a3b8", paddingLeft: "16px", marginBottom: "8px" }}>
-                <span>+ Housing Savings this year:</span>
-                <span className="positive">
-                  <MathTooltip ledger={`  Example from final month of Year ${selectedYear}:\n    Max Budget: ${formatCurrency(data.finalMaxBudget)}\n  - Rent Cost: -${formatCurrency(data.finalMonthlyRentCost)}\n  = Savings:    ${formatCurrency(data.finalMaxBudget - data.finalMonthlyRentCost)}\n\n  Average Monthly Savings (This Year): ${formatCurrency(data.rentSavingsThisYear / 12)}\n* Months Elapsed This Year:            12\n----------------------------------------\n= Housing Savings this year:           ${formatCurrency(data.rentSavingsThisYear)}`}>
-                    +{formatCurrency(data.rentSavingsThisYear)}
-                  </MathTooltip>
-                </span>
-              </div>
-              <div className="row" style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "8px" }}>
-                <span style={{ fontWeight: "bold", fontSize: "0.95rem" }}>Ending Net Worth (Dec 31):</span>
-                <span className="positive" style={{ fontWeight: "bold", fontSize: "0.95rem" }}>
-                  <MathTooltip ledger={`Matches Total Net Worth below.`}>
-                    {formatCurrency(data.stockPortfolio)}
-                  </MathTooltip>
-                </span>
+              <div className="opp-bar-labels">
+                <span><span style={{ color: "var(--negative)" }}>■</span> Rent: {formatCurrency(data.finalRentHousingCost)}</span>
+                <span><span style={{ color: "var(--accent-teal)" }}>■</span> Invest: {formatCurrency(Math.max(0, data.finalRentSurplus))}</span>
               </div>
             </div>
 
-            {/* BOTTOM: Total Accumulated Wealth */}
-            <div style={{ background: "rgba(0,0,0,0.2)", padding: "16px", borderRadius: "12px", marginBottom: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ fontWeight: "bold", marginBottom: "12px", color: "#2dd4bf" }}>Total Accumulated Wealth:</div>
-              <div className="row">
-                <span>Liquid Cash Portfolio:</span>
-                <span className={data.stockPortfolio >= 0 ? "positive" : "negative"}>
-                  <MathTooltip ledger={`  Starting Cash:             ${formatCurrency(data.STARTING_CASH)}\n  (No Down Payment or Closing Costs)\n----------------------------------------\n= Day 1 Liquid Cash:         ${formatCurrency(data.STARTING_CASH)}\n\n+ Cumulative Savings:      +${formatCurrency(data.rentCumulativeSavings)}\n+ Cumulative Returns:      +${formatCurrency(data.rentCumulativeMarketReturns)}\n----------------------------------------\n= Current Liquid Cash:       ${formatCurrency(data.stockPortfolio)}`}>
-                    {formatCurrency(data.stockPortfolio)}
-                  </MathTooltip>
-                </span>
+            {/* Housing cost breakdown */}
+            <div className="opp-section" style={{ marginTop: "12px" }}>
+              <div className="opp-section-title" style={{ color: "#a855f7" }}>
+                Housing Costs — Year {selectedYear}
               </div>
-              <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "12px 0" }} />
-              <div className="row total">
-                <span style={{ fontSize: "1.1rem" }}>Total Net Worth:</span>
-                <span className="positive" style={{ fontSize: "1.3rem" }}>
-                  <MathTooltip ledger={`  Current Liquid Cash:  ${formatCurrency(data.stockPortfolio)}\n------------------------------\n= Total Net Worth:    ${formatCurrency(data.stockPortfolio)}`}>
-                    {formatCurrency(data.stockPortfolio)}
-                  </MathTooltip>
-                </span>
-              </div>
+
+              {data.finalRentHousingCost > 0 ? (
+                <Line
+                  label="Monthly Rent"
+                  amount={-data.finalRentHousingCost}
+                  tooltip={`Base: ${formatCurrency(equivalentRent)}/mo\nInflated ${rentInflation}%/yr for ${selectedYear} yr(s)\nYear ${selectedYear}: ${formatCurrency(data.finalRentHousingCost)}/mo`}
+                />
+              ) : (
+                <div className="opp-cf-line">
+                  <span className="opp-cf-label" style={{ fontStyle: "italic", color: "var(--text-muted)" }}>
+                    No rent (post move-out)
+                  </span>
+                  <span style={{ color: "var(--text-muted)" }}>$0</span>
+                </div>
+              )}
+
+              <div className="opp-cf-divider" />
+              <Line
+                label="= Net Housing Cost"
+                amount={-data.finalRentHousingCost}
+                bold
+              />
             </div>
 
-            <div
-              style={{
-                background: "rgba(0,0,0,0.2)",
-                padding: "12px",
-                borderRadius: "8px",
-                marginTop: "16px",
-              }}
-            >
-              <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
-                Monthly Reality (Year {selectedYear}):
+            {/* Cumulative Wealth */}
+            <div className="opp-section" style={{ marginTop: "12px" }}>
+              <div className="opp-section-title" style={{ color: "#2dd4bf" }}>
+                Net Worth — Year {selectedYear}
               </div>
-              <div className="row">
-                <span>Phase:</span>{" "}
-                <span style={{ color: "#e2e8f0" }}>Renting</span>
-              </div>
-              <div className="row">
-                <span>Current Monthly Rent:</span>{" "}
-                <span className="negative">
-                  -{formatCurrency(data.finalMonthlyRentCost)}/mo
+
+              <Line
+                label="Brokerage Account"
+                amount={data.rentBrokerage}
+                tooltip={`Day 1: ${formatCurrency(data.STARTING_CASH)} (full — no down payment)\n+ Deposited: ${formatCurrency(data.totalRentSurplusDeposited)}\n+ Market Returns: ${formatCurrency(data.rentCumulativeReturns)}\n= ${formatCurrency(data.rentBrokerage)}`}
+              />
+              <div className="opp-cf-divider" />
+              <div className="opp-cf-line">
+                <span className="opp-cf-label-bold" style={{ fontSize: "1.05rem" }}>
+                  Total Net Worth
                 </span>
-              </div>
-              <div className="row">
-                <span>Cumulative Rent Burned:</span>{" "}
-                <span className="negative">
-                  -{formatCurrency(data.totalRentCashBurned)}
+                <span className="positive" style={{ fontSize: "1.3rem", fontWeight: 700 }}>
+                  {formatCurrency(data.rentNetWorth)}
                 </span>
               </div>
             </div>
@@ -628,6 +614,7 @@ function OpportunityCostTab({
         </div>
       </div>
 
+      {/* ── Verdict ── */}
       <div
         className="card"
         style={{
@@ -640,14 +627,35 @@ function OpportunityCostTab({
           {data.pathAWins ? "🏠 Buying Wins!" : "📈 Renting Wins!"}
         </h3>
         <p style={{ fontSize: "1.1rem", color: "#cbd5e1" }}>
-          In Year {selectedYear},{" "}
+          By Year {selectedYear},{" "}
           {data.pathAWins ? "buying the condo" : "renting and investing"} puts
           you ahead by{" "}
           <strong style={{ color: "#4ade80", fontSize: "1.3rem" }}>
             {formatCurrency(data.delta)}
           </strong>
-          .
         </p>
+        <div
+          style={{
+            marginTop: "16px",
+            display: "flex",
+            justifyContent: "center",
+            gap: "24px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div className="opp-verdict-stat">
+            <span className="opp-verdict-label">Total Housing Spent (Buy)</span>
+            <span className="negative">
+              {formatCurrency(data.totalBuyHousingSpent)}
+            </span>
+          </div>
+          <div className="opp-verdict-stat">
+            <span className="opp-verdict-label">Total Rent Spent</span>
+            <span className="negative">
+              {formatCurrency(data.totalRentHousingSpent)}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

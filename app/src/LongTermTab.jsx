@@ -1,11 +1,10 @@
-import React, { useMemo } from "react";
-import { TrendingUp, CheckCircle, XCircle, Info } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { TrendingUp, CheckCircle, XCircle, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { formatCurrency } from "./utils";
 
 function LongTermTab({
-  isRental,
+  selectedYear,
   purchasePrice,
-  loanAmount,
   amortizationSchedule,
   baseHOA,
   basePropertyTaxAnnual,
@@ -13,10 +12,16 @@ function LongTermTab({
   appreciation,
   moveOutYear,
 }) {
+  const [showFullTable, setShowFullTable] = useState(false);
+
   const projectionData = useMemo(() => {
     const rows = [];
     let currentHOAAnnual = baseHOA * 12;
     let currentPropertyTax = basePropertyTaxAnnual;
+    const baseHOAAnnual = baseHOA * 12;
+
+    let cumulativeHOAPaid = 0;
+    let cumulativeBaseHOA = 0;
 
     for (let year = 1; year <= 30; year++) {
       const marketValue =
@@ -35,27 +40,37 @@ function LongTermTab({
         currentPropertyTax = currentPropertyTax * 1.02;
       }
 
-      // Section 121 eligibility
+      // Cumulative HOA tracking
+      cumulativeHOAPaid += currentHOAAnnual;
+      cumulativeBaseHOA += baseHOAAnnual;
+      const cumulativeHOAIncrease = cumulativeHOAPaid - cumulativeBaseHOA;
+
+      // Appreciation gain
+      const appreciationGain = marketValue - purchasePrice;
+
+      // Section 121: must have lived there 2 of the 5 years before the sale.
       let section121Status;
-      if (isRental) {
-        section121Status = "expired";
+      if (year < 2) {
+        section121Status = "too-soon";
+      } else if (year <= moveOutYear) {
+        section121Status = "living";
+      } else if (year <= moveOutYear + 3) {
+        section121Status = "eligible";
       } else {
-        if (year <= moveOutYear) {
-          section121Status = "living";
-        } else if (year <= moveOutYear + 3) {
-          section121Status = "eligible";
-        } else {
-          section121Status = "expired";
-        }
+        section121Status = "expired";
       }
+      const excluded =
+        section121Status === "living" || section121Status === "eligible";
 
       const capitalGain = marketValue - purchasePrice;
       const exclusionPerPerson = 250000;
       const totalExclusion = exclusionPerPerson * 2; // both brothers
-      const taxableGain =
-        section121Status === "expired"
-          ? Math.max(0, capitalGain)
-          : Math.max(0, capitalGain - totalExclusion);
+      const taxableGain = excluded
+        ? Math.max(0, capitalGain - totalExclusion)
+        : Math.max(0, capitalGain);
+
+      // Net position: appreciation gain minus the extra HOA you paid due to inflation
+      const netPosition = appreciationGain - cumulativeHOAIncrease;
 
       rows.push({
         year,
@@ -68,12 +83,15 @@ function LongTermTab({
         section121Status,
         capitalGain,
         taxableGain,
+        cumulativeHOAPaid,
+        cumulativeHOAIncrease,
+        appreciationGain,
+        netPosition,
       });
     }
     return rows;
   }, [
     purchasePrice,
-    loanAmount,
     amortizationSchedule,
     baseHOA,
     basePropertyTaxAnnual,
@@ -88,6 +106,15 @@ function LongTermTab({
   const year15 = projectionData[14];
   const year30 = projectionData[29];
 
+  // Determine which rows to show
+  const summaryYears = new Set([5, 10, 15, 30, selectedYear]);
+  summaryYears.add(moveOutYear);
+  summaryYears.add(moveOutYear + 3);
+
+  const displayRows = showFullTable
+    ? projectionData
+    : projectionData.filter((row) => summaryYears.has(row.year));
+
   return (
     <div className="tab-fade-in">
       {/* Immediate feedback panels */}
@@ -98,8 +125,8 @@ function LongTermTab({
 
         <p style={{ color: "#94a3b8", marginBottom: "24px" }}>
           The values below reflect the global settings in your control panel
-          (Appreciation: {appreciation}%, HOA Inflation: {hoaInflation}%
-          {!isRental && `, Move-Out: Year ${moveOutYear}`}).
+          (Appreciation: {appreciation}%, HOA Inflation: {hoaInflation}%,
+          Move-Out: Year {moveOutYear}).
         </p>
 
         <div
@@ -243,52 +270,51 @@ function LongTermTab({
       </div>
 
       {/* Section 121 Explainer */}
-      <div
-        style={{
-          background: "rgba(96, 165, 250, 0.1)",
-          border: "1px solid rgba(96, 165, 250, 0.3)",
-          padding: "16px 20px",
-          borderRadius: "8px",
-          display: "flex",
-          gap: "12px",
-          marginBottom: "24px",
-        }}
-      >
-        <Info
-          color="#60a5fa"
-          size={28}
-          style={{ flexShrink: 0, marginTop: "2px" }}
-        />
+      <div className="card" style={{ marginBottom: "24px", display: "flex", gap: "12px", background: "rgba(96, 165, 250, 0.1)", border: "1px solid rgba(96, 165, 250, 0.3)" }}>
+        <Info color="#60a5fa" size={28} style={{ flexShrink: 0, marginTop: "2px" }} />
         <div>
-          <div className="card" style={{ marginBottom: "24px" }}>
-            <h2>Section 121 Tax-Free Capital Gains Expiration</h2>
-            <div style={{ marginBottom: "16px" }}>
-              <p>
-                The IRS allows up to $500,000 (for two co-owners) of capital gains
-                to be tax-free IF you lived in the home for 2 of the last 5 years
-                before selling.
-              </p>
-              {isRental ? (
-                <p style={{ color: "#f87171", marginTop: "8px" }}>
-                  <strong>Note:</strong> Because you are currently modeling the property as a <strong>Rental</strong> from Day 1, you do not meet the primary residence test. All capital gains are fully taxable.
-                </p>
-              ) : (
-                <p style={{ color: "#f87171", marginTop: "8px" }}>
-                  Once you move out to rent it to tenants in <strong>Year </strong>
-                  {moveOutYear}, the clock starts — you have until{" "}
-                  <strong>Year {moveOutYear + 3}</strong> to sell and still qualify.
-                </p>
-              )}
-            </div>
-          </div>
+          <h2 style={{ marginTop: 0 }}>Section 121 Tax-Free Capital Gains Window</h2>
+          <p>
+            The IRS lets each co-owner exclude up to $250,000 of gain ($500,000
+            combined) if they lived in the home for 2 of the 5 years before
+            selling.
+          </p>
+          <p style={{ color: "#f87171", marginTop: "8px", marginBottom: 0 }}>
+            Moving out after <strong>Year {moveOutYear}</strong> starts the clock
+            — you have until the end of <strong>Year {moveOutYear + 3}</strong>{" "}
+            to sell and still qualify. Depreciation claimed while renting is
+            recaptured and is not covered by the exclusion.
+          </p>
         </div>
       </div>
 
       {/* Projection Table */}
       <div className="card" style={{ marginBottom: "24px" }}>
-        <h2>
-          <TrendingUp className="icon" /> 30-Year Projection
-        </h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+          <h2 style={{ margin: 0 }}>
+            <TrendingUp className="icon" /> 30-Year Projection
+          </h2>
+          <button
+            onClick={() => setShowFullTable(!showFullTable)}
+            className="topbar-badge"
+            style={{
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              fontSize: "0.8rem",
+              background: showFullTable ? "rgba(96, 165, 250, 0.15)" : "rgba(255, 255, 255, 0.05)",
+              borderColor: showFullTable ? "rgba(96, 165, 250, 0.3)" : "rgba(255, 255, 255, 0.1)",
+              color: showFullTable ? "#60a5fa" : "#94a3b8",
+              border: "1px solid",
+              padding: "6px 12px",
+              borderRadius: "6px",
+            }}
+          >
+            {showFullTable ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {showFullTable ? "Show Key Years" : "Show All 30 Years"}
+          </button>
+        </div>
         <div className="table-wrapper">
           <table className="amort-table">
             <thead>
@@ -298,28 +324,17 @@ function LongTermTab({
                 <th>Loan Balance</th>
                 <th>Equity</th>
                 <th>Monthly HOA</th>
-                <th>Annual Prop Tax</th>
+                <th style={{ color: "#a855f7" }}>Cumul. HOA Increase</th>
+                <th style={{ color: "#60a5fa" }}>Appreciation Gain</th>
+                <th style={{ color: "#2dd4bf" }}>Net Position</th>
                 <th>Section 121</th>
-                <th>Taxable Gain if Sold</th>
+                <th>Taxable Gain</th>
               </tr>
             </thead>
             <tbody>
-              {projectionData
-                .filter(
-                  (row) =>
-                    isRental 
-                      ? [5, 10, 15, 30].includes(row.year)
-                      : (row.year === moveOutYear ||
-                         row.year === moveOutYear + 3 ||
-                         [5, 10, 15, 30].includes(row.year))
-                )
-                .sort((a, b) => a.year - b.year)
-                .map((row, index, array) => {
-                  // Only keep unique years in case moveOutYear overlaps with 5, 10, 15, 30
-                  if (index > 0 && array[index - 1].year === row.year)
-                    return null;
-                  const isCurrentMoveOut = !isRental && row.year === moveOutYear;
-                  const isDeadline = !isRental && row.year === moveOutYear + 3;
+              {displayRows.map((row) => {
+                  const isCurrentMoveOut = row.year === moveOutYear;
+                  const isDeadline = row.year === moveOutYear + 3;
                   const isExpired = row.section121Status === "expired";
 
                   let rowBg = "transparent";
@@ -331,7 +346,7 @@ function LongTermTab({
 
                 return (
                   <tr key={row.year} style={{ background: rowBg }}>
-                    <td>
+                    <td style={row.year === selectedYear ? { fontWeight: 700, color: "var(--accent-blue)" } : undefined}>
                       Year {row.year}
                       {isCurrentMoveOut && " 🚚"}
                       {isDeadline && " ⏰"}
@@ -340,10 +355,31 @@ function LongTermTab({
                     <td>{formatCurrency(row.loanBalance)}</td>
                     <td className="positive">{formatCurrency(row.equity)}</td>
                     <td>{formatCurrency(row.monthlyHOA)}</td>
-                    <td>{formatCurrency(row.annualPropertyTax)}</td>
+                    <td>
+                      <span className="negative">
+                        {row.cumulativeHOAIncrease > 0
+                          ? `-${formatCurrency(row.cumulativeHOAIncrease)}`
+                          : formatCurrency(0)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={row.appreciationGain >= 0 ? "positive" : "negative"}>
+                        {row.appreciationGain >= 0 ? "+" : ""}{formatCurrency(row.appreciationGain)}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        style={{
+                          color: row.netPosition >= 0 ? "var(--accent-teal)" : "var(--negative)",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {row.netPosition >= 0 ? "+" : ""}{formatCurrency(row.netPosition)}
+                      </span>
+                    </td>
                     <td>
                       {row.section121Status === "living" && (
-                        <span style={{ color: "#60a5fa" }}>🏠 Living Here</span>
+                        <span style={{ color: "#60a5fa" }}>🏠 Living</span>
                       )}
                       {row.section121Status === "eligible" && (
                         <span style={{ color: "#4ade80" }}>
@@ -353,6 +389,9 @@ function LongTermTab({
                           />{" "}
                           Eligible
                         </span>
+                      )}
+                      {row.section121Status === "too-soon" && (
+                        <span style={{ color: "#94a3b8" }}>Under 2 yrs</span>
                       )}
                       {row.section121Status === "expired" && (
                         <span style={{ color: "#f87171" }}>
@@ -372,7 +411,7 @@ function LongTermTab({
                           {formatCurrency(0)} (excluded!)
                         </span>
                       ) : (
-                        <span className={isExpired ? "negative" : "positive"}>
+                        <span className={row.taxableGain > 0 ? "negative" : "positive"}>
                           {formatCurrency(row.taxableGain)}
                         </span>
                       )}
@@ -403,6 +442,13 @@ function LongTermTab({
                 {formatCurrency(year30?.monthlyHOA || 0)}/mo
               </span>
             </div>
+            <div className="divider" style={{ margin: "8px 0" }} />
+            <div className="row">
+              <span>30yr Extra HOA Paid:</span>{" "}
+              <span className="negative">
+                {formatCurrency(year30?.cumulativeHOAIncrease || 0)}
+              </span>
+            </div>
           </div>
         </div>
         <div className="card">
@@ -424,6 +470,13 @@ function LongTermTab({
               <span>Year 30 Equity:</span>{" "}
               <span className="positive">
                 {formatCurrency(year30?.equity || 0)}
+              </span>
+            </div>
+            <div className="divider" style={{ margin: "8px 0" }} />
+            <div className="row">
+              <span>30yr Appreciation:</span>{" "}
+              <span className="positive">
+                +{formatCurrency(year30?.appreciationGain || 0)}
               </span>
             </div>
           </div>

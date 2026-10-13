@@ -1,5 +1,5 @@
 import React from "react";
-import { Info, Home, Building, Receipt, Wallet, TrendingUp, PiggyBank, CircleDollarSign } from "lucide-react";
+import { Info, Home, Receipt, Wallet, TrendingUp, PiggyBank } from "lucide-react";
 import { formatCurrency } from "./utils";
 
 function CashFlowTab({
@@ -23,7 +23,8 @@ function CashFlowTab({
   propertyTax,
   hoa,
   totalOperatingExpenses,
-  selectedYear,
+  cashToClose,
+  onShowLoan,
 }) {
   const dadShare = 0.5;
   const userShare = 0.25;
@@ -70,6 +71,8 @@ function CashFlowTab({
           borderRadius: "16px",
           padding: "24px",
           display: "flex",
+          flexWrap: "wrap",
+          gap: "12px",
           justifyContent: "space-between",
           alignItems: "center",
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)"
@@ -99,6 +102,21 @@ function CashFlowTab({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Upfront cash */}
+      <div className="cash-strip">
+        <div className="cash-strip-title">
+          <PiggyBank size={16} /> Cash to close: {formatCurrency(cashToClose.total)}
+        </div>
+        <div className="cash-strip-people">
+          <span>Dad {formatCurrency(cashToClose.byPerson.dad.total)}</span>
+          <span className="cash-strip-you">You {formatCurrency(cashToClose.byPerson.user.total)}</span>
+          <span>Brother {formatCurrency(cashToClose.byPerson.brother.total)}</span>
+        </div>
+        <button type="button" className="cash-strip-link" onClick={onShowLoan}>
+          Details →
+        </button>
       </div>
 
       {/* Gift Tax Warning */}
@@ -166,7 +184,7 @@ function CashFlowTab({
             <BreakdownRow icon={Wallet} label="Rent Income" value={`+${formatCurrency(userRentIncome)}`} color="var(--positive)" />
             
             {includeTaxSavings && (
-              <BreakdownRow icon={TrendingUp} label="Tax Savings" value={`+${formatCurrency(userTaxShield)}`} color="var(--positive)" />
+              <BreakdownRow icon={TrendingUp} label={userTaxShield >= 0 ? "Tax Savings" : "Tax Cost"} value={userTaxShield > 0 ? `+${formatCurrency(userTaxShield)}` : formatCurrency(userTaxShield)} color={userTaxShield >= 0 ? "var(--positive)" : "var(--negative)"} />
             )}
           </div>
         </div>
@@ -191,7 +209,7 @@ function CashFlowTab({
             <BreakdownRow icon={Wallet} label="Rent Income" value={`+${formatCurrency(brotherRentIncome)}`} color="var(--positive)" />
             
             {includeTaxSavings && (
-              <BreakdownRow icon={TrendingUp} label="Tax Savings" value={`+${formatCurrency(userTaxShield)}`} color="var(--positive)" />
+              <BreakdownRow icon={TrendingUp} label={userTaxShield >= 0 ? "Tax Savings" : "Tax Cost"} value={userTaxShield > 0 ? `+${formatCurrency(userTaxShield)}` : formatCurrency(userTaxShield)} color={userTaxShield >= 0 ? "var(--positive)" : "var(--negative)"} />
             )}
           </div>
         </div>
