@@ -22,6 +22,7 @@ import LoanTab from "./LoanTab";
 import TaxTab from "./TaxTab";
 import LongTermTab from "./LongTermTab";
 import OpportunityCostTab from "./OpportunityCostTab";
+import { AssumptionPanel, AssumptionSlider } from "./Assumption";
 import { formatCurrency } from "./utils";
 import {
   buildAmortizationSchedule,
@@ -40,95 +41,6 @@ const TAB_CONFIG = [
   { id: "longterm", icon: TrendingUp, label: "Long-Term" },
   { id: "opportunity", icon: Scale, label: "Buy vs Rent" },
 ];
-
-const ContextualSlider = ({ icon: Icon, label, value, setValue, min, max, step, format = "currency" }) => {
-  const [editing, setEditing] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
-  const inputRef = React.useRef(null);
-
-  let displayValue = value;
-  if (format.startsWith("currency")) {
-    displayValue = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
-  } else if (format.startsWith("percentage")) {
-    displayValue = `${value}%`;
-  }
-  if (format === "currency/mo") displayValue += "/mo";
-  if (format === "years") displayValue += " yrs";
-
-  React.useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editing]);
-
-  const handleClick = (e) => {
-    e.stopPropagation();
-    setInputValue(String(value));
-    setEditing(true);
-  };
-
-  const commit = () => {
-    const parsed = parseFloat(inputValue);
-    if (!isNaN(parsed)) {
-      setValue(Math.min(max, Math.max(min, parsed)));
-    }
-    setEditing(false);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") commit();
-    if (e.key === "Escape") setEditing(false);
-  };
-
-  return (
-    <div className="year-badge-container">
-      <div className="year-text">
-        <Icon size={13} />
-        {label}:{" "}
-        {editing ? (
-          <input
-            ref={inputRef}
-            type="number"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onBlur={commit}
-            onKeyDown={handleKeyDown}
-            min={min}
-            max={max}
-            step={step}
-            className="compact-input"
-            aria-label={`${label} value`}
-            style={{ width: "56px", fontSize: "0.72rem", padding: "2px 4px", height: "20px" }}
-          />
-        ) : (
-          <button
-            type="button"
-            className="compact-value-button"
-            onClick={handleClick}
-            title="Click to type a value"
-            aria-label={`Edit ${label}, current value ${displayValue}`}
-          >
-            {displayValue}
-          </button>
-        )}
-      </div>
-      <div className="year-slider-inline">
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => setValue(Number(e.target.value))}
-          className="slider blue-slider"
-          aria-label={label}
-          style={{ width: "140px", margin: 0, flexShrink: 0 }}
-        />
-      </div>
-    </div>
-  );
-};
 
 function App() {
   const [activeTab, setActiveTab] = useState("cashflow");
@@ -352,119 +264,28 @@ function App() {
 
       {/* ─── TOP BAR ─── */}
       <header className={`topbar ${assumptionsOpen ? "assumptions-open" : ""}`}>
-        <div className="topbar-left" style={{ gap: "16px" }}>
+        <div className="topbar-row">
           <h1 className="topbar-title">SF Condo Financial Model</h1>
 
-          <button
-            type="button"
-            className="mobile-assumptions-toggle"
-            aria-expanded={assumptionsOpen}
-            aria-controls="contextual-assumptions"
-            onClick={() => setAssumptionsOpen((open) => !open)}
-          >
-            <Sliders size={16} /> Assumptions
-          </button>
-
-          <div
-            id="contextual-assumptions"
-            className="contextual-assumptions"
-          >
-            <ContextualSlider icon={Home} label="Price" value={purchasePrice} setValue={setPurchasePrice} min={900000} max={1500000} step={10000} format="currency" />
-            
-            {activeTab === "cashflow" && (
-              <>
-                <ContextualSlider icon={Building} label="HOA" value={baseHOA} setValue={setBaseHOA} min={500} max={2500} step={1} format="currency/mo" />
-                <ContextualSlider icon={Clock} label="Move Out" value={moveOutYear} setValue={setMoveOutYear} min={2} max={10} step={1} format="years" />
-                {isRental ? (
-                  <>
-                    <ContextualSlider icon={Users} label="Tenant Rent" value={tenantRent} setValue={setTenantRent} min={5500} max={9000} step={100} format="currency/mo" />
-                    <ContextualSlider icon={Wrench} label="OpEx" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
-                  </>
-                ) : (
-                  <>
-                    <ContextualSlider icon={User} label="You" value={userRent} setValue={setUserRent} min={2500} max={4000} step={50} format="currency/mo" />
-                    <ContextualSlider icon={User} label="Brother" value={brotherRent} setValue={setBrotherRent} min={2500} max={4000} step={50} format="currency/mo" />
-                  </>
-                )}
-              </>
-            )}
-            
-            {activeTab === "loan" && (
-              <>
-                <ContextualSlider icon={PiggyBank} label="Down" value={downPaymentPercent} setValue={setDownPaymentPercent} min={10} max={50} step={5} format="percentage" />
-                <ContextualSlider icon={Percent} label="Rate" value={interestRate} setValue={setInterestRate} min={4.0} max={8.0} step={0.125} format="percentage" />
-                <ContextualSlider icon={Activity} label="HOA Infl." value={hoaInflation} setValue={setHoaInflation} min={1} max={10} step={0.5} format="percentage" />
-              </>
-            )}
-            
-            {activeTab === "taxes" && (
-              <>
-                <ContextualSlider icon={Landmark} label="Tax Rate" value={propertyTaxRate} setValue={setPropertyTaxRate} min={0.5} max={2.0} step={0.01} format="percentage" />
-                <ContextualSlider icon={Clock} label="Move Out" value={moveOutYear} setValue={setMoveOutYear} min={2} max={10} step={1} format="years" />
-              </>
-            )}
-            
-            {activeTab === "longterm" && (
-              <>
-                <ContextualSlider icon={TrendingUp} label="Appreciation" value={appreciation} setValue={setAppreciation} min={0} max={10} step={0.5} format="percentage" />
-                <ContextualSlider icon={Clock} label="Move Out" value={moveOutYear} setValue={setMoveOutYear} min={2} max={10} step={1} format="years" />
-                <ContextualSlider icon={Activity} label="HOA Infl." value={hoaInflation} setValue={setHoaInflation} min={1} max={10} step={0.5} format="percentage" />
-              </>
-            )}
-            
-            {activeTab === "opportunity" && (
-              <>
-                <ContextualSlider icon={DollarSign} label="Take-Home" value={takeHome} setValue={setTakeHome} min={2000} max={15000} step={100} format="currency/mo" />
-                <ContextualSlider icon={DollarSign} label="Expenses" value={nonHousingExpenses} setValue={setNonHousingExpenses} min={500} max={8000} step={100} format="currency/mo" />
-                <ContextualSlider icon={TrendingUp} label="S&P 500" value={stockMarketReturn} setValue={setStockMarketReturn} min={0} max={15} step={0.5} format="percentage" />
-                <ContextualSlider icon={Home} label="Eq. Rent" value={equivalentRent} setValue={setEquivalentRent} min={500} max={5000} step={50} format="currency/mo" />
-                <ContextualSlider icon={TrendingUp} label="Rent Infl." value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
-                <ContextualSlider icon={TrendingUp} label="Apprec." value={appreciation} setValue={setAppreciation} min={0} max={10} step={0.5} format="percentage" />
-              </>
-            )}
-          </div>
-        </div>
-        <div className="topbar-right">
-          <div className="topbar-badges">
-            <div className="year-badge-container">
-              <div className="year-text">
-                <Clock size={13} />
-                Year {selectedYear}
-              </div>
-              <div className="year-slider-inline">
-                <input
-                  type="range"
-                  min={1}
-                  max={30}
-                  step={1}
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="slider blue-slider"
-                  aria-label="Projection year"
-                  style={{ width: "140px", margin: 0, flexShrink: 0 }}
-                />
-              </div>
-            </div>
-            <label 
-              className="topbar-badge" 
-              style={{ 
-                cursor: "pointer", 
-                display: "flex", 
-                alignItems: "center", 
-                gap: "6px",
-                background: includeTaxSavings ? "rgba(52, 211, 153, 0.1)" : "rgba(255, 255, 255, 0.05)",
-                borderColor: includeTaxSavings ? "rgba(52, 211, 153, 0.3)" : "rgba(255, 255, 255, 0.08)",
-                color: includeTaxSavings ? "var(--positive)" : "var(--text-secondary)"
-              }}
-            >
-              <input 
-                type="checkbox" 
-                checked={includeTaxSavings} 
-                onChange={(e) => setIncludeTaxSavings(e.target.checked)} 
-                style={{ margin: 0, cursor: "pointer" }} 
-              />
-              Tax Savings
+          <div className="year-control">
+            <label htmlFor="projection-year" className="year-control-label">
+              <Clock size={14} /> Year <strong>{selectedYear}</strong>
             </label>
+            <input
+              id="projection-year"
+              type="range"
+              min={1}
+              max={30}
+              step={1}
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="assumption-range"
+              style={{ "--fill": `${((selectedYear - 1) / 29) * 100}%` }}
+              aria-label="Projection year"
+            />
+          </div>
+
+          <div className="topbar-status">
             <button
               type="button"
               className={`topbar-badge occupancy-toggle ${isRental ? "badge-purple" : "badge-blue"}`}
@@ -479,10 +300,37 @@ function App() {
               <ArrowLeftRight size={12} />
               {isRental ? "Rental" : "Owner"}
             </button>
-            <span className={`topbar-badge ${userNet >= 0 ? "badge-green" : "badge-red"}`} style={{ width: "125px", display: "inline-flex", justifyContent: "center" }}>
-              Net: {formatCurrency(userNet)}/mo
+            <label className={`topbar-badge tax-toggle ${includeTaxSavings ? "is-on" : ""}`}>
+              <input
+                type="checkbox"
+                checked={includeTaxSavings}
+                onChange={(e) => setIncludeTaxSavings(e.target.checked)}
+              />
+              Tax Savings
+            </label>
+            <span className={`topbar-badge net-badge ${userNet >= 0 ? "badge-green" : "badge-red"}`}>
+              Your net: {formatCurrency(userNet)}/mo
             </span>
           </div>
+
+          <button
+            type="button"
+            className="mobile-assumptions-toggle"
+            aria-expanded={assumptionsOpen}
+            aria-controls="global-assumptions"
+            onClick={() => setAssumptionsOpen((open) => !open)}
+          >
+            <Sliders size={16} /> Deal terms
+          </button>
+        </div>
+
+        <div id="global-assumptions" className="global-assumptions">
+          <AssumptionSlider icon={Home} label="Price" value={purchasePrice} setValue={setPurchasePrice} min={900000} max={1500000} step={10000} />
+          <AssumptionSlider icon={PiggyBank} label="Down" value={downPaymentPercent} setValue={setDownPaymentPercent} min={10} max={50} step={5} format="percentage" />
+          <AssumptionSlider icon={Percent} label="Rate" value={interestRate} setValue={setInterestRate} min={4} max={8} step={0.125} format="percentage" />
+          <AssumptionSlider icon={Building} label="HOA" value={baseHOA} setValue={setBaseHOA} min={500} max={2500} step={10} format="currency/mo" />
+          <AssumptionSlider icon={Landmark} label="Prop. Tax" value={propertyTaxRate} setValue={setPropertyTaxRate} min={0.5} max={2} step={0.01} format="percentage" />
+          <AssumptionSlider icon={Clock} label="Move Out" value={moveOutYear} setValue={setMoveOutYear} min={2} max={10} step={1} format="years" />
         </div>
       </header>
 
@@ -496,6 +344,14 @@ function App() {
           {activeTab === "opportunity" && "Opportunity Cost"}
         </h2>
         {activeTab === "cashflow" && (
+          <>
+          <AssumptionPanel title="Rent" note={isRental ? `Rental years (after Year ${moveOutYear})` : `Owner years (through Year ${moveOutYear})`}>
+              <AssumptionSlider icon={User} label="Your Rent" hint="owner years" value={userRent} setValue={setUserRent} min={2500} max={4000} step={50} format="currency/mo" />
+              <AssumptionSlider icon={User} label="Brother's Rent" hint="owner years" value={brotherRent} setValue={setBrotherRent} min={2500} max={4000} step={50} format="currency/mo" />
+              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental years" value={tenantRent} setValue={setTenantRent} min={5500} max={9000} step={100} format="currency/mo" />
+              <AssumptionSlider icon={Wrench} label="Operating Expenses" hint="% of price / yr" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
+              <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
+          </AssumptionPanel>
           <CashFlowTab
             isRental={isRental}
             userRent={userRent}
@@ -524,6 +380,7 @@ function App() {
             cashToClose={cashToClose}
             onShowLoan={() => setActiveTab("loan")}
           />
+          </>
         )}
 
         {activeTab === "loan" && (
@@ -544,6 +401,12 @@ function App() {
         )}
 
         {activeTab === "taxes" && (
+          <>
+          <AssumptionPanel title="Rental Inputs" note="Used once you move out; tax brackets live in TAX_ASSUMPTIONS">
+              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental years" value={tenantRent} setValue={setTenantRent} min={5500} max={9000} step={100} format="currency/mo" />
+              <AssumptionSlider icon={Wrench} label="Operating Expenses" hint="% of price / yr" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
+              <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
+          </AssumptionPanel>
           <TaxTab
             isRental={isRental}
             selectedYear={selectedYear}
@@ -571,9 +434,15 @@ function App() {
             llcShare={llcTaxShare}
             userShareOfRentIncome={userShareOfRentIncomeTax}
           />
+          </>
         )}
 
         {activeTab === "longterm" && (
+          <>
+          <AssumptionPanel title="Growth">
+              <AssumptionSlider icon={TrendingUp} label="Appreciation" hint="per year" value={appreciation} setValue={setAppreciation} min={0} max={10} step={0.5} format="percentage" />
+              <AssumptionSlider icon={Activity} label="HOA Growth" hint="per year" value={hoaInflation} setValue={setHoaInflation} min={1} max={10} step={0.5} format="percentage" />
+          </AssumptionPanel>
           <LongTermTab
             selectedYear={selectedYear}
             purchasePrice={purchasePrice}
@@ -584,9 +453,19 @@ function App() {
             appreciation={appreciation}
             moveOutYear={moveOutYear}
           />
+          </>
         )}
 
         {activeTab === "opportunity" && (
+          <>
+          <AssumptionPanel title="Your Budget & Markets">
+              <AssumptionSlider icon={DollarSign} label="Take-Home Pay" value={takeHome} setValue={setTakeHome} min={2000} max={15000} step={100} format="currency/mo" />
+              <AssumptionSlider icon={DollarSign} label="Non-Housing Expenses" value={nonHousingExpenses} setValue={setNonHousingExpenses} min={500} max={8000} step={100} format="currency/mo" />
+              <AssumptionSlider icon={Home} label="Equivalent Rent" hint="if you rented instead" value={equivalentRent} setValue={setEquivalentRent} min={500} max={5000} step={50} format="currency/mo" />
+              <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
+              <AssumptionSlider icon={TrendingUp} label="S&P 500 Return" hint="per year" value={stockMarketReturn} setValue={setStockMarketReturn} min={0} max={15} step={0.5} format="percentage" />
+              <AssumptionSlider icon={TrendingUp} label="Appreciation" hint="per year" value={appreciation} setValue={setAppreciation} min={0} max={10} step={0.5} format="percentage" />
+          </AssumptionPanel>
           <OpportunityCostTab
             purchasePrice={purchasePrice}
             loanAmount={loanAmount}
@@ -609,6 +488,7 @@ function App() {
             equivalentRent={equivalentRent}
             includeTaxSavings={includeTaxSavings}
           />
+          </>
         )}
       </main>
     </div>
