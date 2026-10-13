@@ -1721,3 +1721,114 @@ button:focus:not(:focus-visible) {
     justify-content: center;
   }
 }
+
+/* Owner / Rental toggle in the top bar */
+.occupancy-toggle {
+  width: 84px;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.occupancy-toggle:hover {
+  filter: brightness(1.25);
+}
+
+/* Cash to close (Loan tab card + Cash Flow strip) */
+.cash-to-close {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 2fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.cash-to-close-split {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cash-person {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  text-align: center;
+}
+
+.cash-person-you {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.cash-person-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.cash-person-total {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 4px 0;
+}
+
+.cash-person-detail {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cash-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.9rem;
+}
+
+.cash-strip-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.cash-strip-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--text-secondary);
+}
+
+.cash-strip-you {
+  color: #a5b4fc;
+  font-weight: 600;
+}
+
+.cash-strip-link {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  color: var(--accent-blue);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .cash-to-close {
+    grid-template-columns: 1fr;
+  }
+  .cash-to-close-split {
+    grid-template-columns: 1fr;
+  }
+  .cash-strip-link {
+    margin-left: 0;
+  }
+}

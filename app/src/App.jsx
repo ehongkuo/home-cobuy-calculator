@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   Home,
   DollarSign,
@@ -14,6 +14,8 @@ import {
   Percent,
   Activity,
   Landmark,
+  ArrowLeftRight,
+  PiggyBank,
 } from "lucide-react";
 import CashFlowTab from "./CashFlowTab";
 import LoanTab from "./LoanTab";
@@ -23,6 +25,7 @@ import OpportunityCostTab from "./OpportunityCostTab";
 import { formatCurrency } from "./utils";
 import {
   buildAmortizationSchedule,
+  calculateCashToClose,
   calculateCumulativeRentalTaxSavings,
   calculateMortgagePayment,
   calculateScheduleATaxSavings,
@@ -147,7 +150,7 @@ function App() {
   const [rentInflation, setRentInflation] = useState(3.0);
   const [moveOutYear, setMoveOutYear] = useState(5);
   const [operatingExpenseRate, setOperatingExpenseRate] = useState(0.5);
-  const [downPaymentPercent] = useState(20);
+  const [downPaymentPercent, setDownPaymentPercent] = useState(20);
   const [loanTermYears] = useState(30);
   const [propertyTaxRate, setPropertyTaxRate] = useState(1.18);
 
@@ -159,13 +162,25 @@ function App() {
 
   const isRental = selectedYear > moveOutYear;
 
+  // Owner/Rental toggle moves the projection year across the move-out line,
+  // so every tab stays consistent with the Move Out year.
+  const lastOwnerYear = useRef(1);
+  const toggleOccupancy = () => {
+    if (isRental) {
+      setSelectedYear(Math.min(lastOwnerYear.current, moveOutYear));
+    } else {
+      lastOwnerYear.current = selectedYear;
+      setSelectedYear(moveOutYear + 1);
+    }
+  };
+
   const totalRent = isRental
     ? valueInYear(tenantRent, rentInflation, selectedYear)
     : userRent + brotherRent;
 
   // 1. Property Calculations (Base values)
-  const downPayment = purchasePrice * (downPaymentPercent / 100);
-  const loanAmount = purchasePrice - downPayment;
+  const cashToClose = calculateCashToClose({ purchasePrice, downPaymentPercent });
+  const loanAmount = purchasePrice - cashToClose.downPayment;
   const mortgage = calculateMortgagePayment(
     loanAmount,
     interestRate,
@@ -376,6 +391,7 @@ function App() {
             
             {activeTab === "loan" && (
               <>
+                <ContextualSlider icon={PiggyBank} label="Down" value={downPaymentPercent} setValue={setDownPaymentPercent} min={10} max={50} step={5} format="percentage" />
                 <ContextualSlider icon={Percent} label="Rate" value={interestRate} setValue={setInterestRate} min={4.0} max={8.0} step={0.125} format="percentage" />
                 <ContextualSlider icon={Activity} label="HOA Infl." value={hoaInflation} setValue={setHoaInflation} min={1} max={10} step={0.5} format="percentage" />
               </>
@@ -449,13 +465,20 @@ function App() {
               />
               Tax Savings
             </label>
-            <span 
-              className={`topbar-badge ${isRental ? "badge-purple" : "badge-blue"}`}
-              style={{ cursor: "default", width: "64px", display: "inline-flex", justifyContent: "center" }}
-              title="Automatically toggles based on Year > Move Out Year"
+            <button
+              type="button"
+              className={`topbar-badge occupancy-toggle ${isRental ? "badge-purple" : "badge-blue"}`}
+              onClick={toggleOccupancy}
+              aria-pressed={isRental}
+              title={
+                isRental
+                  ? `Rental (after move-out in Year ${moveOutYear}). Click to view an owner-occupied year.`
+                  : `Owner-occupied through Year ${moveOutYear}. Click to view the first rental year.`
+              }
             >
+              <ArrowLeftRight size={12} />
               {isRental ? "Rental" : "Owner"}
-            </span>
+            </button>
             <span className={`topbar-badge ${userNet >= 0 ? "badge-green" : "badge-red"}`} style={{ width: "125px", display: "inline-flex", justifyContent: "center" }}>
               Net: {formatCurrency(userNet)}/mo
             </span>
@@ -498,6 +521,8 @@ function App() {
             propertyTax={propertyTax}
             hoa={hoa}
             totalOperatingExpenses={totalOperatingExpenses}
+            cashToClose={cashToClose}
+            onShowLoan={() => setActiveTab("loan")}
           />
         )}
 
@@ -505,6 +530,7 @@ function App() {
           <LoanTab
             purchasePrice={purchasePrice}
             downPaymentPercent={downPaymentPercent}
+            cashToClose={cashToClose}
             loanAmount={loanAmount}
             mortgage={mortgage}
             propertyTaxRate={propertyTaxRate}

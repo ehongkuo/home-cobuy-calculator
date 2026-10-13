@@ -2,11 +2,16 @@ import React, { useMemo } from "react";
 import MathTooltip from "./MathTooltip";
 import { formatCurrency } from "./utils";
 import {
+  BUYER_CLOSING_COST_RATE,
+  EQUITY_SPLIT,
   calculateNetWorthComparison,
   calculateScheduleATaxSavings,
   TAX_ASSUMPTIONS,
   valueInYear,
 } from "./financialModel";
+
+const buyerClosingCostsPercent = BUYER_CLOSING_COST_RATE;
+const userEquityShare = EQUITY_SPLIT.user;
 
 function OpportunityCostTab({
   purchasePrice,
@@ -34,10 +39,8 @@ function OpportunityCostTab({
   // ── Constants ──
   const STARTING_CASH = 100000;
   const downPaymentTotal = purchasePrice - loanAmount;
-  const buyerClosingCostsPercent = 0.02;
   const sellerClosingCostsPercent = 0.06;
 
-  const userEquityShare = 0.25;
   const userCashFlowShareOwner = 0.25;
   const userCashFlowShareRental = 0.25;
   const userTaxShareRental = 0.50;

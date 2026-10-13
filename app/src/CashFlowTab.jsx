@@ -1,5 +1,5 @@
 import React from "react";
-import { Info, Home, Receipt, Wallet, TrendingUp } from "lucide-react";
+import { Info, Home, Receipt, Wallet, TrendingUp, PiggyBank } from "lucide-react";
 import { formatCurrency } from "./utils";
 
 function CashFlowTab({
@@ -23,6 +23,8 @@ function CashFlowTab({
   propertyTax,
   hoa,
   totalOperatingExpenses,
+  cashToClose,
+  onShowLoan,
 }) {
   const dadShare = 0.5;
   const userShare = 0.25;
@@ -100,6 +102,21 @@ function CashFlowTab({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Upfront cash */}
+      <div className="cash-strip">
+        <div className="cash-strip-title">
+          <PiggyBank size={16} /> Cash to close: {formatCurrency(cashToClose.total)}
+        </div>
+        <div className="cash-strip-people">
+          <span>Dad {formatCurrency(cashToClose.byPerson.dad.total)}</span>
+          <span className="cash-strip-you">You {formatCurrency(cashToClose.byPerson.user.total)}</span>
+          <span>Brother {formatCurrency(cashToClose.byPerson.brother.total)}</span>
+        </div>
+        <button type="button" className="cash-strip-link" onClick={onShowLoan}>
+          Details →
+        </button>
       </div>
 
       {/* Gift Tax Warning */}

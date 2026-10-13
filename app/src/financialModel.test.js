@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   buildAmortizationSchedule,
   calculateScheduleATaxSavings,
+  calculateCashToClose,
   calculateCumulativeRentalTaxSavings,
   calculateMortgagePayment,
   calculateNetWorthComparison,
@@ -104,4 +105,18 @@ test("schedule A savings applies the SALT cap and mortgage debt limit", () => {
   closeTo(result.deductibleInterest, 60000 * (750000 / 1000000));
   assert.equal(result.saltUnderCap, false);
   assert.equal(result.deductiblePropertyTax, 40400 - 16000);
+});
+
+test("cash to close splits down payment and closing costs by equity share", () => {
+  const result = calculateCashToClose({
+    purchasePrice: 1050000,
+    downPaymentPercent: 20,
+  });
+
+  assert.equal(result.downPayment, 210000);
+  assert.equal(result.closingCosts, 21000);
+  assert.equal(result.total, 231000);
+  assert.equal(result.byPerson.dad.total, 115500);
+  assert.equal(result.byPerson.user.total, 57750);
+  assert.equal(result.byPerson.brother.downPayment, 52500);
 });

@@ -164,3 +164,31 @@ export function calculateScheduleATaxSavings({
     monthlyTaxSavings: annualTaxSavings / 12,
   };
 }
+
+// Upfront cash split by equity: Dad 50%, you 25%, brother 25%.
+export const BUYER_CLOSING_COST_RATE = 0.02;
+export const EQUITY_SPLIT = { dad: 0.5, user: 0.25, brother: 0.25 };
+
+export function calculateCashToClose({
+  purchasePrice,
+  downPaymentPercent,
+  closingCostRate = BUYER_CLOSING_COST_RATE,
+  split = EQUITY_SPLIT,
+}) {
+  const downPayment = purchasePrice * (downPaymentPercent / 100);
+  const closingCosts = purchasePrice * closingCostRate;
+  const total = downPayment + closingCosts;
+  const byPerson = Object.fromEntries(
+    Object.entries(split).map(([person, share]) => [
+      person,
+      {
+        share,
+        downPayment: downPayment * share,
+        closingCosts: closingCosts * share,
+        total: total * share,
+      },
+    ]),
+  );
+
+  return { downPayment, closingCosts, total, byPerson };
+}
