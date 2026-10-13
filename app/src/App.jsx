@@ -25,6 +25,8 @@ import {
   buildAmortizationSchedule,
   calculateCumulativeRentalTaxSavings,
   calculateMortgagePayment,
+  calculateScheduleATaxSavings,
+  TAX_ASSUMPTIONS,
   valueInYear,
 } from "./financialModel";
 
@@ -207,31 +209,13 @@ function App() {
   const monthlyPrincipal = totalPrincipalForYear / 12;
 
   // --- Owner Occupied (Schedule A) ---
-  const userShareOfInterest = totalInterestForYear / 2;
-  const userShareOfPropertyTax = propertyTaxAnnual / 2;
-  const userShareOfLoan = loanAmount / 2;
-
-  const tcjaLimit = 750000;
-  const interestFullyDeductible = userShareOfLoan <= tcjaLimit;
-  const deductibleInterest = interestFullyDeductible
-    ? userShareOfInterest
-    : userShareOfInterest * (tcjaLimit / userShareOfLoan);
-
-  const caStateTax = 16000;
-  const saltTotal = caStateTax + userShareOfPropertyTax;
-  const saltCap = 40400;
-  const saltUnderCap = saltTotal <= saltCap;
-  const deductiblePropertyTax = saltUnderCap
-    ? userShareOfPropertyTax
-    : Math.max(0, saltCap - caStateTax);
-
-  const totalItemized = caStateTax + deductiblePropertyTax + deductibleInterest;
-  const standardDeduction = 16100;
-  const incrementalDeduction = Math.max(0, totalItemized - standardDeduction);
-
-  const marginalRate = 0.24;
-  const annualTaxSavings = incrementalDeduction * marginalRate;
-  const userTaxShieldScheduleA = annualTaxSavings / 12;
+  const scheduleA = calculateScheduleATaxSavings({
+    annualInterest: totalInterestForYear,
+    annualPropertyTax: propertyTaxAnnual,
+    loanAmount,
+  });
+  const marginalRate = TAX_ASSUMPTIONS.marginalRate;
+  const userTaxShieldScheduleA = scheduleA.monthlyTaxSavings;
 
   // --- Rental (LLC Partnership — 25% cash flow, 50% tax benefits, REPS active losses) ---
   const llcCashFlowShare = 0.25;
@@ -407,9 +391,7 @@ function App() {
             {activeTab === "longterm" && (
               <>
                 <ContextualSlider icon={TrendingUp} label="Appreciation" value={appreciation} setValue={setAppreciation} min={0} max={10} step={0.5} format="percentage" />
-                {!isRental && (
-                  <ContextualSlider icon={Clock} label="Move Out" value={moveOutYear} setValue={setMoveOutYear} min={2} max={10} step={1} format="years" />
-                )}
+                <ContextualSlider icon={Clock} label="Move Out" value={moveOutYear} setValue={setMoveOutYear} min={2} max={10} step={1} format="years" />
                 <ContextualSlider icon={Activity} label="HOA Infl." value={hoaInflation} setValue={setHoaInflation} min={1} max={10} step={0.5} format="percentage" />
               </>
             )}
@@ -544,16 +526,7 @@ function App() {
             propertyTax={propertyTax}
             hoa={hoa}
             mortgage={mortgage}
-            userShareOfInterest={userShareOfInterest}
-            userShareOfPropertyTax={userShareOfPropertyTax}
-            userShareOfLoan={userShareOfLoan}
-            deductibleInterest={deductibleInterest}
-            deductiblePropertyTax={deductiblePropertyTax}
-            saltTotal={saltTotal}
-            totalItemized={totalItemized}
-            incrementalDeduction={incrementalDeduction}
-            annualTaxSavings={annualTaxSavings}
-            userTaxShield={userTaxShieldScheduleA}
+            scheduleA={scheduleA}
             // Rental LLC props passed down from App
             purchasePrice={purchasePrice}
             rentalInterest={rentalInterest}
@@ -576,7 +549,7 @@ function App() {
 
         {activeTab === "longterm" && (
           <LongTermTab
-            isRental={isRental}
+            selectedYear={selectedYear}
             purchasePrice={purchasePrice}
             amortizationSchedule={amortizationSchedule}
             baseHOA={baseHOA}
@@ -608,6 +581,7 @@ function App() {
             nonHousingExpenses={nonHousingExpenses}
             stockMarketReturn={stockMarketReturn}
             equivalentRent={equivalentRent}
+            includeTaxSavings={includeTaxSavings}
           />
         )}
       </main>

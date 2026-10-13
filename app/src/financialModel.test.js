@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildAmortizationSchedule,
+  calculateScheduleATaxSavings,
   calculateCumulativeRentalTaxSavings,
   calculateMortgagePayment,
   calculateNetWorthComparison,
@@ -77,4 +78,30 @@ test("opportunity-cost totals reconcile and compare liquid net worth", () => {
   assert.equal(result.rentNetWorth, 107000);
   assert.equal(result.pathAWins, false);
   assert.equal(result.delta, 11075);
+});
+
+test("schedule A savings only counts deductions above the standard deduction", () => {
+  const result = calculateScheduleATaxSavings({
+    annualInterest: 54000,
+    annualPropertyTax: 12390,
+    loanAmount: 840000,
+  });
+
+  assert.equal(result.interestFullyDeductible, true);
+  assert.equal(result.saltUnderCap, true);
+  closeTo(result.totalItemized, 16000 + 6195 + 27000);
+  closeTo(result.annualTaxSavings, (16000 + 6195 + 27000 - 16100) * 0.24);
+});
+
+test("schedule A savings applies the SALT cap and mortgage debt limit", () => {
+  const result = calculateScheduleATaxSavings({
+    annualInterest: 120000,
+    annualPropertyTax: 60000,
+    loanAmount: 2000000,
+  });
+
+  assert.equal(result.interestFullyDeductible, false);
+  closeTo(result.deductibleInterest, 60000 * (750000 / 1000000));
+  assert.equal(result.saltUnderCap, false);
+  assert.equal(result.deductiblePropertyTax, 40400 - 16000);
 });

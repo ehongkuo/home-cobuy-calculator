@@ -1,7 +1,12 @@
 import React, { useMemo } from "react";
 import MathTooltip from "./MathTooltip";
 import { formatCurrency } from "./utils";
-import { calculateNetWorthComparison, valueInYear } from "./financialModel";
+import {
+  calculateNetWorthComparison,
+  calculateScheduleATaxSavings,
+  TAX_ASSUMPTIONS,
+  valueInYear,
+} from "./financialModel";
 
 function OpportunityCostTab({
   purchasePrice,
@@ -23,6 +28,7 @@ function OpportunityCostTab({
   nonHousingExpenses,
   stockMarketReturn,
   equivalentRent,
+  includeTaxSavings = true,
 }) {
 
   // ── Constants ──
@@ -36,11 +42,7 @@ function OpportunityCostTab({
   const userCashFlowShareRental = 0.25;
   const userTaxShareRental = 0.50;
 
-  const tcjaLimit = 750000;
-  const caStateTax = 16000;
-  const saltCap = 40400;
-  const standardDeduction = 16100;
-  const marginalRate = 0.24;
+  const marginalRate = TAX_ASSUMPTIONS.marginalRate;
   const buildingRatio = 0.8;
   const depreciationBasis = purchasePrice * buildingRatio;
   const annualDepreciation = depreciationBasis / 27.5;
@@ -116,25 +118,13 @@ function OpportunityCostTab({
         const totalRentPot = userRent + brotherRent;
         monthRentIncome = totalRentPot * 0.25;
 
-        const userShareOfInterest = totalInterestForYear / 2;
-        const userShareOfPropertyTax = currentTaxAnnual / 2;
-        const userShareOfLoan = loanAmount / 2;
-        const deductibleInterest =
-          userShareOfLoan <= tcjaLimit
-            ? userShareOfInterest
-            : userShareOfInterest * (tcjaLimit / userShareOfLoan);
-        const saltTotal = caStateTax + userShareOfPropertyTax;
-        const deductiblePropertyTax =
-          saltTotal <= saltCap
-            ? userShareOfPropertyTax
-            : Math.max(0, saltCap - caStateTax);
-        const totalItemized =
-          caStateTax + deductiblePropertyTax + deductibleInterest;
-        const incrementalDeduction = Math.max(
-          0,
-          totalItemized - standardDeduction
-        );
-        monthTaxShield = (incrementalDeduction * marginalRate) / 12;
+        monthTaxShield = includeTaxSavings
+          ? calculateScheduleATaxSavings({
+              annualInterest: totalInterestForYear,
+              annualPropertyTax: currentTaxAnnual,
+              loanAmount,
+            }).monthlyTaxSavings
+          : 0;
 
         buyHousingCost =
           monthMortgageShare +
@@ -177,7 +167,9 @@ function OpportunityCostTab({
           inflatedTenantRent * 12 * userTaxShareRental;
         const netRentalIncomeTax =
           annualRentalIncomeTax - totalRentalDeductions;
-        monthRentalTaxImpact = (netRentalIncomeTax * marginalRate) / 12;
+        monthRentalTaxImpact = includeTaxSavings
+          ? (netRentalIncomeTax * marginalRate) / 12
+          : 0;
 
         buyHousingCost =
           monthMortgageShare +
@@ -314,6 +306,8 @@ function OpportunityCostTab({
     nonHousingExpenses,
     downPaymentTotal,
     annualDepreciation,
+    includeTaxSavings,
+    marginalRate,
   ]);
 
   // ── Reusable line item ──
@@ -477,7 +471,7 @@ function OpportunityCostTab({
                   tooltip={`Schedule A: incremental deductions above standard deduction × ${marginalRate * 100}%\nMonthly: ${formatCurrency(data.finalTaxShield)}`}
                 />
               )}
-              {data.finalIsRental && (
+              {data.finalIsRental && includeTaxSavings && (
                 <Line
                   label={data.finalRentalTaxImpact <= 0 ? "Tax Shield (LLC)" : "Tax Liability"}
                   amount={-data.finalRentalTaxImpact}

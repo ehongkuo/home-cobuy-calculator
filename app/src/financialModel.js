@@ -103,3 +103,64 @@ export function calculateNetWorthComparison({
     delta: Math.abs(buyLiquidNetWorth - rentNetWorth),
   };
 }
+
+// Owner-occupied Schedule A savings for one co-owner (federal, single filer).
+export const TAX_ASSUMPTIONS = {
+  w2Income: 213000,
+  caStateTax: 16000,
+  saltCap: 40400,
+  standardDeduction: 16100,
+  mortgageDebtLimit: 750000,
+  marginalRate: 0.24,
+};
+
+export function calculateScheduleATaxSavings({
+  annualInterest,
+  annualPropertyTax,
+  loanAmount,
+  ownerShare = 0.5,
+  assumptions = TAX_ASSUMPTIONS,
+}) {
+  const {
+    caStateTax,
+    saltCap,
+    standardDeduction,
+    mortgageDebtLimit,
+    marginalRate,
+  } = assumptions;
+
+  const shareOfInterest = annualInterest * ownerShare;
+  const shareOfPropertyTax = annualPropertyTax * ownerShare;
+  const shareOfLoan = loanAmount * ownerShare;
+
+  const interestFullyDeductible = shareOfLoan <= mortgageDebtLimit;
+  const deductibleInterest = interestFullyDeductible
+    ? shareOfInterest
+    : shareOfInterest * (mortgageDebtLimit / shareOfLoan);
+
+  const saltTotal = caStateTax + shareOfPropertyTax;
+  const saltUnderCap = saltTotal <= saltCap;
+  const deductiblePropertyTax = saltUnderCap
+    ? shareOfPropertyTax
+    : Math.max(0, saltCap - caStateTax);
+
+  const totalItemized = caStateTax + deductiblePropertyTax + deductibleInterest;
+  const incrementalDeduction = Math.max(0, totalItemized - standardDeduction);
+  const annualTaxSavings = incrementalDeduction * marginalRate;
+
+  return {
+    shareOfInterest,
+    shareOfPropertyTax,
+    shareOfLoan,
+    interestFullyDeductible,
+    deductibleInterest,
+    saltTotal,
+    saltUnderCap,
+    deductiblePropertyTax,
+    totalItemized,
+    itemizes: totalItemized > standardDeduction,
+    incrementalDeduction,
+    annualTaxSavings,
+    monthlyTaxSavings: annualTaxSavings / 12,
+  };
+}

@@ -36,15 +36,15 @@ function LoanTab({
             </div>
             <hr />
             <div className="math-step">
-              <span className="math-label">Property Tax ({propertyTaxRate}% / 12):</span>
+              <span className="math-label">Property Tax ({propertyTaxRate}%, Year {selectedYear}):</span>
               <span className="math-value">{formatCurrency(propertyTax)}</span>
             </div>
             <div className="math-step">
-              <span className="math-label">HOA (Zillow Unit 307):</span>
+              <span className="math-label">HOA (Year {selectedYear}):</span>
               <span className="math-value">{formatCurrency(hoa)}</span>
             </div>
             <div className="math-step total-math">
-              <span className="math-label">Total Monthly Cost:</span>
+              <span className="math-label">Total Monthly Cost (Year {selectedYear}):</span>
               <span className="math-value highlight-large">
                 {formatCurrency(propertyCosts)}
               </span>

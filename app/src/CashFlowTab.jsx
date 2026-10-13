@@ -69,6 +69,8 @@ function CashFlowTab({
           borderRadius: "16px",
           padding: "24px",
           display: "flex",
+          flexWrap: "wrap",
+          gap: "12px",
           justifyContent: "space-between",
           alignItems: "center",
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)"
