@@ -6,7 +6,7 @@ This interactive React application was built to simulate the complex financial b
 
 ## What's Inside?
 
-The app has five tabs. A **Year** slider in the top bar drives every tab; the model switches from **Owner** to **Rental** automatically once the year passes the **Move Out** year. A **Tax Savings** toggle turns the tax shield on or off everywhere.
+The app has five tabs. A **Year** slider in the top bar drives every tab. The **Owner / Rental** toggle switches Cash Flow and Taxes between the owner-occupied and rental views without changing the year; Long-Term and Buy vs Rent follow the **Move Out** year as a timeline. A **Tax Savings** toggle turns the tax shield on or off everywhere.
 
 ### 1. Cash Flow 💵
 The "Total Rent Pot" and how it splits between Dad (50%), you (25%), and your brother (25%), with each person's net monthly cash flow.

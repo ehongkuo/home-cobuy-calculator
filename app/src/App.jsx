@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Home,
   DollarSign,
@@ -72,19 +72,15 @@ function App() {
   const [stockMarketReturn, setStockMarketReturn] = useState(7.0);
   const [equivalentRent, setEquivalentRent] = useState(3300);
 
-  const isRental = selectedYear > moveOutYear;
+  // Owner-occupied vs rental view for Cash Flow and Taxes. Independent of
+  // the year; Long-Term and Buy vs Rent follow the Move Out timeline instead.
+  const [isRental, setIsRental] = useState(false);
+  const toggleOccupancy = () => setIsRental((rental) => !rental);
 
-  // Owner/Rental toggle moves the projection year across the move-out line,
-  // so every tab stays consistent with the Move Out year.
-  const lastOwnerYear = useRef(1);
-  const toggleOccupancy = () => {
-    if (isRental) {
-      setSelectedYear(Math.min(lastOwnerYear.current, moveOutYear));
-    } else {
-      lastOwnerYear.current = selectedYear;
-      setSelectedYear(moveOutYear + 1);
-    }
-  };
+  // Rental years counted toward cumulative tax savings: after move-out, or
+  // from year 1 when viewing a rental year before the planned move-out.
+  const rentalStartsAfterYear =
+    isRental && selectedYear <= moveOutYear ? 0 : moveOutYear;
 
   const totalRent = isRental
     ? valueInYear(tenantRent, rentInflation, selectedYear)
@@ -181,7 +177,7 @@ function App() {
   const cumulativeTaxSavings = useMemo(() => {
     return calculateCumulativeRentalTaxSavings({
       throughYear: selectedYear,
-      moveOutYear,
+      moveOutYear: rentalStartsAfterYear,
       amortizationSchedule,
       basePropertyTaxAnnual,
       baseHOAMonthly: baseHOA,
@@ -195,7 +191,7 @@ function App() {
     }).totalSavings;
   }, [
     selectedYear,
-    moveOutYear,
+    rentalStartsAfterYear,
     amortizationSchedule,
     basePropertyTaxAnnual,
     baseHOA,
@@ -293,8 +289,8 @@ function App() {
               aria-pressed={isRental}
               title={
                 isRental
-                  ? `Rental (after move-out in Year ${moveOutYear}). Click to view an owner-occupied year.`
-                  : `Owner-occupied through Year ${moveOutYear}. Click to view the first rental year.`
+                  ? "Viewing as a rental property. Click to view as owner-occupied."
+                  : "Viewing as owner-occupied. Click to view as a rental property."
               }
             >
               <ArrowLeftRight size={12} />
@@ -345,10 +341,10 @@ function App() {
         </h2>
         {activeTab === "cashflow" && (
           <>
-          <AssumptionPanel title="Rent" note={isRental ? `Rental years (after Year ${moveOutYear})` : `Owner years (through Year ${moveOutYear})`}>
-              <AssumptionSlider icon={User} label="Your Rent" hint="owner years" value={userRent} setValue={setUserRent} min={2500} max={4000} step={50} format="currency/mo" />
-              <AssumptionSlider icon={User} label="Brother's Rent" hint="owner years" value={brotherRent} setValue={setBrotherRent} min={2500} max={4000} step={50} format="currency/mo" />
-              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental years" value={tenantRent} setValue={setTenantRent} min={5500} max={9000} step={100} format="currency/mo" />
+          <AssumptionPanel title="Rent" note={isRental ? "Rental view: tenant rent applies" : "Owner-occupied view: your and your brother's rent apply"}>
+              <AssumptionSlider icon={User} label="Your Rent" hint="owner view" value={userRent} setValue={setUserRent} min={2500} max={4000} step={50} format="currency/mo" />
+              <AssumptionSlider icon={User} label="Brother's Rent" hint="owner view" value={brotherRent} setValue={setBrotherRent} min={2500} max={4000} step={50} format="currency/mo" />
+              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental view" value={tenantRent} setValue={setTenantRent} min={5500} max={9000} step={100} format="currency/mo" />
               <AssumptionSlider icon={Wrench} label="Operating Expenses" hint="% of price / yr" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
               <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
           </AssumptionPanel>
@@ -402,8 +398,8 @@ function App() {
 
         {activeTab === "taxes" && (
           <>
-          <AssumptionPanel title="Rental Inputs" note="Used once you move out; tax brackets live in TAX_ASSUMPTIONS">
-              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental years" value={tenantRent} setValue={setTenantRent} min={5500} max={9000} step={100} format="currency/mo" />
+          <AssumptionPanel title="Rental Inputs" note="Used in the rental view; tax brackets live in TAX_ASSUMPTIONS">
+              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental view" value={tenantRent} setValue={setTenantRent} min={5500} max={9000} step={100} format="currency/mo" />
               <AssumptionSlider icon={Wrench} label="Operating Expenses" hint="% of price / yr" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
               <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
           </AssumptionPanel>
