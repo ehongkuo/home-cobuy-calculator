@@ -2,14 +2,14 @@
 
 Welcome to the financial model for SF condo purchases
 
-This interactive React application was built to simulate the complex financial breakdown of a 50/50 family co-investment in San Francisco real estate. It helps clarify exactly how the cash flow, tax deductions, and property math shake out.
+This interactive React application was built to simulate the complex financial breakdown of a shared co-investment in San Francisco real estate. It helps clarify exactly how the cash flow, tax deductions, and property math shake out.
 
 ## What's Inside?
 
 The app has five tabs. A **Year** slider in the top bar drives every tab. The **Owner / Rental** toggle switches Cash Flow and Taxes between the owner-occupied and rental views without changing the year; Long-Term and Buy vs Rent follow the **Move Out** year as a timeline. A **Tax Savings** toggle turns the tax shield on or off everywhere.
 
 ### 1. Cash Flow 💵
-The "Total Rent Pot" and how it splits between Dad (50%), you (25%), and your brother (25%), with each person's net monthly cash flow.
+The "Total Rent Pot" and how it splits between an investor (50%), you (25%), and a co-owner (25%), with each person's net monthly cash flow.
 
 ### 2. Loan 📈
 How the mortgage payment is derived, plus the full 30-year amortization schedule with the selected year highlighted.

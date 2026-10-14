@@ -84,7 +84,7 @@ function TaxTab({
           <div className="card-body">
             <p style={{ color: "#e2e8f0", marginBottom: "16px" }}>
               This scenario models <strong>2 equal LLC members ({(llcShare * 100).toFixed(0)}% each)</strong>:
-              you and your brother. It assigns each member half of the reported
+              you and your co-owner. It assigns each member half of the reported
               rental income and deductions.
             </p>
             <p style={{ color: "#fbbf24", marginBottom: "16px" }}>
@@ -115,7 +115,7 @@ function TaxTab({
                   fontSize: "0.9rem",
                 }}
               >
-                👤 Brother — 50% Member
+                👤 Co-owner — 50% Member
               </div>
             </div>
           </div>
@@ -725,7 +725,7 @@ function TaxTab({
         <div className="card-body">
           <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
             The IRS only lets you deduct YOUR share of what you pay. Since the
-            mortgage is in both brothers' names equally:
+            mortgage is in both co-owners' names equally:
           </p>
           <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
             <div
@@ -783,7 +783,7 @@ function TaxTab({
                   fontSize: "1.1rem",
                 }}
               >
-                Brother's 50% Share (Year {selectedYear})
+                Co-owner's 50% Share (Year {selectedYear})
               </div>
               <div className="row">
                 <span>Mortgage Interest:</span>{" "}
@@ -795,7 +795,7 @@ function TaxTab({
               </div>
               <hr style={{ opacity: 0.2 }} />
               <div className="row total">
-                <span>His Deductible Total:</span>{" "}
+                <span>Their Deductible Total:</span>{" "}
                 <span style={{ color: "#4ade80" }}>
                   {formatCurrency(deductibleInterest + deductiblePropertyTax)} /
                   yr
@@ -1001,7 +1001,7 @@ function TaxTab({
                 marginBottom: 0,
               }}
             >
-              This is per person. Both brothers get this amount individually.
+              This is per person. Both co-owners get this amount individually.
             </p>
           </div>
         </div>

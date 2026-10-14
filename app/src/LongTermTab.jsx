@@ -64,7 +64,7 @@ function LongTermTab({
 
       const capitalGain = marketValue - purchasePrice;
       const exclusionPerPerson = 250000;
-      const totalExclusion = exclusionPerPerson * 2; // both brothers
+      const totalExclusion = exclusionPerPerson * 2; // both co-owners
       const taxableGain = excluded
         ? Math.max(0, capitalGain - totalExclusion)
         : Math.max(0, capitalGain);

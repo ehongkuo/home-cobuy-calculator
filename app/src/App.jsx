@@ -48,7 +48,7 @@ function App() {
 
   // Shared state
   const [userRent, setUserRent] = useState(3200);
-  const [brotherRent, setBrotherRent] = useState(3000);
+  const [coOwnerRent, setCoOwnerRent] = useState(3000);
   const [tenantRent, setTenantRent] = useState(6500);
   const [includeTaxSavings, setIncludeTaxSavings] = useState(true);
   const [selectedYear, setSelectedYear] = useState(1);
@@ -56,7 +56,7 @@ function App() {
   // Global Controls State
   const [purchasePrice, setPurchasePrice] = useState(1050000);
   const [interestRate, setInterestRate] = useState(6.5);
-  const [baseHOA, setBaseHOA] = useState(1556.0);
+  const [baseHOA, setBaseHOA] = useState(1500);
   const [hoaInflation, setHoaInflation] = useState(4.0);
   const [appreciation, setAppreciation] = useState(3.0);
   const [rentInflation, setRentInflation] = useState(3.0);
@@ -84,7 +84,7 @@ function App() {
 
   const totalRent = isRental
     ? valueInYear(tenantRent, rentInflation, selectedYear)
-    : userRent + brotherRent;
+    : userRent + coOwnerRent;
 
   // 1. Property Calculations (Base values)
   const cashToClose = calculateCashToClose({ purchasePrice, downPaymentPercent });
@@ -214,12 +214,12 @@ function App() {
     : 0;
 
   // 4. Distributions
-  // Cash flow is permanently 50% Dad, 25% User, 25% Brother
-  const dadRentIncome = totalRent * 0.5;
-  const dadExpenses = isRental
+  // Cash flow is permanently 50% investor, 25% you, 25% co-owner
+  const investorRentIncome = totalRent * 0.5;
+  const investorExpenses = isRental
     ? (propertyCosts + totalOperatingExpenses / 12) * 0.5
     : propertyCosts * 0.5;
-  const dadNet = dadRentIncome - dadExpenses;
+  const investorNet = investorRentIncome - investorExpenses;
 
   const userRentIncome = totalRent * 0.25;
   const userExpenses = isRental
@@ -229,13 +229,13 @@ function App() {
     ? userRentIncome - userExpenses + appliedTaxShield
     : userRentIncome - userRent - userExpenses + appliedTaxShield;
 
-  const brotherRentIncome = totalRent * 0.25;
-  const brotherExpenses = isRental
+  const coOwnerRentIncome = totalRent * 0.25;
+  const coOwnerExpenses = isRental
     ? (propertyCosts + totalOperatingExpenses / 12) * llcCashFlowShare
     : propertyCosts * 0.25;
-  const brotherNet = isRental
-    ? brotherRentIncome - brotherExpenses + appliedTaxShield
-    : brotherRentIncome - brotherRent - brotherExpenses + appliedTaxShield;
+  const coOwnerNet = isRental
+    ? coOwnerRentIncome - coOwnerExpenses + appliedTaxShield
+    : coOwnerRentIncome - coOwnerRent - coOwnerExpenses + appliedTaxShield;
 
   return (
     <div className="app-layout">
@@ -341,9 +341,9 @@ function App() {
         </h2>
         {activeTab === "cashflow" && (
           <>
-          <AssumptionPanel title="Rent" note={isRental ? "Rental view: tenant rent applies" : "Owner-occupied view: your and your brother's rent apply"}>
+          <AssumptionPanel title="Rent" note={isRental ? "Rental view: tenant rent applies" : "Owner-occupied view: your and your co-owner's rent apply"}>
               <AssumptionSlider icon={User} label="Your Rent" hint="owner view" value={userRent} setValue={setUserRent} min={2500} max={4000} step={50} format="currency/mo" />
-              <AssumptionSlider icon={User} label="Brother's Rent" hint="owner view" value={brotherRent} setValue={setBrotherRent} min={2500} max={4000} step={50} format="currency/mo" />
+              <AssumptionSlider icon={User} label="Co-owner's Rent" hint="owner view" value={coOwnerRent} setValue={setCoOwnerRent} min={2500} max={4000} step={50} format="currency/mo" />
               <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental view" value={tenantRent} setValue={setTenantRent} min={5500} max={9000} step={100} format="currency/mo" />
               <AssumptionSlider icon={Wrench} label="Operating Expenses" hint="% of price / yr" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
               <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
@@ -352,22 +352,22 @@ function App() {
             isRental={isRental}
             userRent={userRent}
             setUserRent={setUserRent}
-            brotherRent={brotherRent}
-            setBrotherRent={setBrotherRent}
+            coOwnerRent={coOwnerRent}
+            setCoOwnerRent={setCoOwnerRent}
             tenantRent={tenantRent}
             setTenantRent={setTenantRent}
             includeTaxSavings={includeTaxSavings}
             totalRent={totalRent}
-            dadExpenses={dadExpenses}
-            dadRentIncome={dadRentIncome}
-            dadNet={dadNet}
+            investorExpenses={investorExpenses}
+            investorRentIncome={investorRentIncome}
+            investorNet={investorNet}
             userExpenses={userExpenses}
             userRentIncome={userRentIncome}
             userNet={userNet}
             userTaxShield={appliedTaxShield}
-            brotherExpenses={brotherExpenses}
-            brotherRentIncome={brotherRentIncome}
-            brotherNet={brotherNet}
+            coOwnerExpenses={coOwnerExpenses}
+            coOwnerRentIncome={coOwnerRentIncome}
+            coOwnerNet={coOwnerNet}
             propertyCosts={propertyCosts}
             mortgage={mortgage}
             propertyTax={propertyTax}
@@ -471,7 +471,7 @@ function App() {
             hoaInflation={hoaInflation}
             appreciation={appreciation}
             userRent={userRent}
-            brotherRent={brotherRent}
+            coOwnerRent={coOwnerRent}
             tenantRent={tenantRent}
             operatingExpenseRate={operatingExpenseRate}
             moveOutYear={moveOutYear}

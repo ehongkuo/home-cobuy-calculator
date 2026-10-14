@@ -53,7 +53,7 @@ test("cumulative rental savings applies each year's rent instead of the final-ye
     moveOutYear: 5,
     amortizationSchedule: schedule,
     basePropertyTaxAnnual: 12390,
-    baseHOAMonthly: 1556,
+    baseHOAMonthly: 1500,
     hoaInflationPercent: 4,
     tenantRentMonthly: 6500,
     rentInflationPercent: 3,
@@ -65,7 +65,7 @@ test("cumulative rental savings applies each year's rent instead of the final-ye
 
   assert.equal(result.yearly.length, 3);
   closeTo(result.yearly[0].rentalIncome, valueInYear(6500, 3, 6) * 12 * 0.5);
-  closeTo(result.totalSavings, 8721.14, 0.1);
+  closeTo(result.totalSavings, 8414.87, 0.1);
 });
 
 test("opportunity-cost totals reconcile and compare liquid net worth", () => {
@@ -90,8 +90,8 @@ test("schedule A savings only counts deductions above the standard deduction", (
 
   assert.equal(result.interestFullyDeductible, true);
   assert.equal(result.saltUnderCap, true);
-  closeTo(result.totalItemized, 16000 + 6195 + 27000);
-  closeTo(result.annualTaxSavings, (16000 + 6195 + 27000 - 16100) * 0.24);
+  closeTo(result.totalItemized, 15000 + 6195 + 27000);
+  closeTo(result.annualTaxSavings, (15000 + 6195 + 27000 - 16100) * 0.24);
 });
 
 test("schedule A savings applies the SALT cap and mortgage debt limit", () => {
@@ -104,7 +104,7 @@ test("schedule A savings applies the SALT cap and mortgage debt limit", () => {
   assert.equal(result.interestFullyDeductible, false);
   closeTo(result.deductibleInterest, 60000 * (750000 / 1000000));
   assert.equal(result.saltUnderCap, false);
-  assert.equal(result.deductiblePropertyTax, 40400 - 16000);
+  assert.equal(result.deductiblePropertyTax, 40400 - 15000);
 });
 
 test("cash to close splits down payment and closing costs by equity share", () => {
@@ -116,7 +116,7 @@ test("cash to close splits down payment and closing costs by equity share", () =
   assert.equal(result.downPayment, 210000);
   assert.equal(result.closingCosts, 21000);
   assert.equal(result.total, 231000);
-  assert.equal(result.byPerson.dad.total, 115500);
+  assert.equal(result.byPerson.investor.total, 115500);
   assert.equal(result.byPerson.user.total, 57750);
-  assert.equal(result.byPerson.brother.downPayment, 52500);
+  assert.equal(result.byPerson.coOwner.downPayment, 52500);
 });

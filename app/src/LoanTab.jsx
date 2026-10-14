@@ -39,9 +39,9 @@ function LoanTab({
           </div>
           <div className="cash-to-close-split">
             {[
-              ["dad", "Dad"],
+              ["investor", "Investor"],
               ["user", "You"],
-              ["brother", "Brother"],
+              ["coOwner", "Co-owner"],
             ].map(([key, label]) => {
               const person = cashToClose.byPerson[key];
               return (
