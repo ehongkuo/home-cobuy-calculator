@@ -106,8 +106,8 @@ export function calculateNetWorthComparison({
 
 // Owner-occupied Schedule A savings for one co-owner (federal, single filer).
 export const TAX_ASSUMPTIONS = {
-  w2Income: 213000,
-  caStateTax: 16000,
+  w2Income: 200000,
+  caStateTax: 15000,
   saltCap: 40400,
   standardDeduction: 16100,
   mortgageDebtLimit: 750000,
@@ -165,9 +165,9 @@ export function calculateScheduleATaxSavings({
   };
 }
 
-// Upfront cash split by equity: Dad 50%, you 25%, brother 25%.
+// Upfront cash split by equity: investor 50%, you 25%, co-owner 25%.
 export const BUYER_CLOSING_COST_RATE = 0.02;
-export const EQUITY_SPLIT = { dad: 0.5, user: 0.25, brother: 0.25 };
+export const EQUITY_SPLIT = { investor: 0.5, user: 0.25, coOwner: 0.25 };
 
 export function calculateCashToClose({
   purchasePrice,

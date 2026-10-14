@@ -22,7 +22,7 @@ function OpportunityCostTab({
   hoaInflation, // percentage
   appreciation, // percentage
   userRent, // user's monthly rent contribution during owner-occupied
-  brotherRent, // brother's rent during owner-occupied
+  coOwnerRent, // co-owner's rent during owner-occupied
   tenantRent, // total monthly tenant rent when rented out
   operatingExpenseRate,
   moveOutYear,
@@ -118,7 +118,7 @@ function OpportunityCostTab({
         monthHoaShare = currentHOA * userCashFlowShareOwner;
         monthPropTaxShare = currentTaxMonthly * userCashFlowShareOwner;
 
-        const totalRentPot = userRent + brotherRent;
+        const totalRentPot = userRent + coOwnerRent;
         monthRentIncome = totalRentPot * 0.25;
 
         monthTaxShield = includeTaxSavings
@@ -296,7 +296,7 @@ function OpportunityCostTab({
     hoaInflation,
     appreciation,
     userRent,
-    brotherRent,
+    coOwnerRent,
     tenantRent,
     operatingExpenseRate,
     moveOutYear,
@@ -456,7 +456,7 @@ function OpportunityCostTab({
                 />
               )}
               {!data.finalIsRental && (
-                <Line label="Your Rent to Parents" amount={-userRent} />
+                <Line label="Your Rent Payment" amount={-userRent} />
               )}
               <Line
                 label={data.finalIsRental ? "Tenant Income (25%)" : "Rent Pot Back (25%)"}
@@ -464,7 +464,7 @@ function OpportunityCostTab({
                 tooltip={
                   data.finalIsRental
                     ? `Tenant pays ${formatCurrency(data.finalTenantRent)}/mo\nYour 25%: ${formatCurrency(data.finalRentIncome)}`
-                    : `Rent pot: ${formatCurrency(userRent + brotherRent)}/mo\nYour 25% back: ${formatCurrency(data.finalRentIncome)}`
+                    : `Rent pot: ${formatCurrency(userRent + coOwnerRent)}/mo\nYour 25% back: ${formatCurrency(data.finalRentIncome)}`
                 }
               />
               {!data.finalIsRental && data.finalTaxShield > 0 && (
