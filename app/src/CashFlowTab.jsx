@@ -1,6 +1,22 @@
 import React from "react";
 import { Info, Home, Receipt, Wallet, TrendingUp, PiggyBank } from "lucide-react";
-import { formatCurrency } from "./utils";
+import { FLOW_COLORS, formatCurrency } from "./utils";
+import { buildRentFlow } from "./financialModel";
+import RentFlowSankey from "./RentFlowSankey";
+
+const SummaryRow = ({ kind, label, value, muted = false }) => (
+  <div className={`rentflow-row${muted ? " is-muted" : ""}`}>
+    <span className="rentflow-dot" style={{ background: FLOW_COLORS[kind] }} />
+    <span>{label}</span>
+    <strong>{formatCurrency(value)}</strong>
+  </div>
+);
+
+const owners = [
+  { kind: "investor", label: "Investor · 50%", share: 0.5 },
+  { kind: "user", label: "You · 25%", share: 0.25 },
+  { kind: "coOwner", label: "Co-owner · 25%", share: 0.25 },
+];
 
 function CashFlowTab({
   isRental,
@@ -20,6 +36,8 @@ function CashFlowTab({
   coOwnerRentIncome,
   coOwnerNet,
   mortgage,
+  monthlyInterest,
+  monthlyPrincipal,
   propertyTax,
   hoa,
   totalOperatingExpenses,
@@ -31,6 +49,31 @@ function CashFlowTab({
   const coOwnerShare = 0.25;
 
   const opExMonthly = (totalOperatingExpenses || 0) / 12;
+
+  // Split the level payment into interest and principal for the selected year.
+  const paidThisYear = monthlyInterest + monthlyPrincipal;
+  const interestPortion = paidThisYear > 0 ? mortgage * (monthlyInterest / paidThisYear) : 0;
+  const flow = buildRentFlow({
+    isRental,
+    userRent,
+    coOwnerRent,
+    totalRent,
+    costs: {
+      interest: interestPortion,
+      principal: paidThisYear > 0 ? mortgage - interestPortion : 0,
+      propertyTax,
+      hoa,
+      opex: isRental ? opExMonthly : 0,
+    },
+  });
+  const coverage = flow.totalCosts > 0 ? totalRent / flow.totalCosts : 1;
+  const payers = isRental
+    ? [{ kind: "tenant", label: "Tenant pays", value: tenantRent }]
+    : [
+        { kind: "user", label: "You pay", value: userRent },
+        { kind: "coOwner", label: "Co-owner pays", value: coOwnerRent },
+      ];
+  const gapLabel = flow.topUp > 0 ? "Owners top up the gap" : "Surplus paid out";
 
   // Gift tax check
   const investorNetAnnualGift = (investorExpenses - investorRentIncome) * 12;
@@ -64,46 +107,66 @@ function CashFlowTab({
   return (
     <div className="tab-fade-in" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       
-      {/* Total Rent Pot - Premium Banner */}
-      <div 
-        style={{
-          background: "linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15))",
-          border: "1px solid rgba(99, 102, 241, 0.3)",
-          borderRadius: "16px",
-          padding: "24px",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "12px",
-          justifyContent: "space-between",
-          alignItems: "center",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)"
-        }}
-      >
-        <div>
-          <div style={{ textTransform: "uppercase", fontSize: "0.8rem", fontWeight: 700, letterSpacing: "1px", color: "var(--accent-blue)", marginBottom: "4px" }}>Total Rent Pot</div>
-          <div style={{ fontSize: "2rem", fontWeight: 800, color: "var(--text-primary)" }}>{formatCurrency(totalRent)}<span style={{fontSize: "1rem", color: "var(--text-muted)", fontWeight: 500}}>/mo</span></div>
-        </div>
-        <div style={{ display: "flex", gap: "16px" }}>
-          {!isRental && (
-            <>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>You Pay</div>
-                <div style={{ fontWeight: 600 }}>{formatCurrency(userRent)}</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Co-owner Pays</div>
-                <div style={{ fontWeight: 600 }}>{formatCurrency(coOwnerRent)}</div>
-              </div>
-            </>
-          )}
-          {isRental && (
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Tenant Pays</div>
-              <div style={{ fontWeight: 600, color: "var(--positive)" }}>{formatCurrency(tenantRent)}</div>
+      {/* Total Rent Pot + rent flow */}
+      <section className="rentflow-hero">
+        <div className="rentflow-summary">
+          <div className="rentflow-eyebrow">Total Monthly Payment</div>
+          <div className="rentflow-total">
+            {formatCurrency(flow.totalCosts)}<span>/mo</span>
+          </div>
+
+          <div className="rentflow-coverage">
+            <div className="rentflow-coverage-head">
+              <span>Rent covers {Math.round(coverage * 100)}%</span>
             </div>
-          )}
+            <div className="rentflow-bar" role="presentation">
+              <div style={{ width: `${Math.min(100, coverage * 100)}%` }} />
+            </div>
+          </div>
+
+          <div className="rentflow-divider" />
+
+          <div className="rentflow-gap">
+            <div className="rentflow-gap-head">
+              <span>Rent pot</span>
+              <strong>{formatCurrency(totalRent)}</strong>
+            </div>
+            <div className="rentflow-rows">
+              {payers.map((p) => (
+                <SummaryRow key={p.kind} kind={p.kind} label={p.label} value={p.value} muted />
+              ))}
+            </div>
+          </div>
+
+          <div className="rentflow-gap">
+            <div className="rentflow-gap-head">
+              <span>{gapLabel}</span>
+              <strong className={flow.topUp > 0 ? "is-negative" : "is-positive"}>
+                {flow.topUp > 0 ? "-" : "+"}{formatCurrency(flow.topUp || flow.surplus)}
+              </strong>
+            </div>
+            <div className="rentflow-rows">
+              {owners.map((o) => (
+                <SummaryRow
+                  key={o.kind}
+                  kind={o.kind}
+                  label={o.label}
+                  value={(flow.topUp || flow.surplus) * o.share}
+                  muted
+                />
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div className="rentflow-chart">
+          <div className="rentflow-chart-head">
+            <h3>Where the money goes</h3>
+            <span className="rentflow-mode">{isRental ? "Rental" : "Owner-occupied"} · monthly</span>
+          </div>
+          <RentFlowSankey flow={flow} />
+        </div>
+      </section>
 
       {/* Upfront cash */}
       <div className="cash-strip">

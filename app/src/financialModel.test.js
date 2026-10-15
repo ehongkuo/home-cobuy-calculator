@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildAmortizationSchedule,
+  buildRentFlow,
   calculateScheduleATaxSavings,
   calculateCashToClose,
   calculateCumulativeRentalTaxSavings,
@@ -119,4 +120,41 @@ test("cash to close splits down payment and closing costs by equity share", () =
   assert.equal(result.byPerson.investor.total, 115500);
   assert.equal(result.byPerson.user.total, 57750);
   assert.equal(result.byPerson.coOwner.downPayment, 52500);
+});
+
+const rentFlowCosts = { interest: 4000, principal: 1000, propertyTax: 1000, hoa: 1500 };
+const sumLinks = (flow, key, id) =>
+  flow.links.filter((l) => l[key] === id).reduce((s, l) => s + l.value, 0);
+
+test("rent flow splits an owner-mode shortfall 50/25/25 and balances every node", () => {
+  const flow = buildRentFlow({
+    isRental: false,
+    userRent: 3200,
+    coOwnerRent: 3000,
+    totalRent: 6200,
+    costs: rentFlowCosts,
+  });
+  assert.equal(flow.topUp, 1300);
+  assert.equal(flow.surplus, 0);
+  assert.equal(sumLinks(flow, "source", "in-investor"), 650);
+  assert.equal(sumLinks(flow, "source", "in-user"), 3200 + 325);
+  for (const node of flow.nodes) {
+    if (node.column > 0) closeTo(sumLinks(flow, "target", node.id), node.value);
+    if (node.column < 2) closeTo(sumLinks(flow, "source", node.id), node.value);
+  }
+});
+
+test("rent flow distributes a rental surplus and skips the top-up", () => {
+  const flow = buildRentFlow({
+    isRental: true,
+    totalRent: 9000,
+    costs: { ...rentFlowCosts, opex: 500 },
+  });
+  assert.equal(flow.surplus, 1000);
+  assert.ok(!flow.nodes.some((n) => n.id === "topUp"));
+  assert.deepEqual(
+    flow.nodes.filter((n) => n.column === 0).map((n) => n.id),
+    ["in-tenant"],
+  );
+  assert.equal(flow.nodes.find((n) => n.id === "out-investor").value, 500);
 });

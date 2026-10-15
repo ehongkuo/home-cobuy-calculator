@@ -192,3 +192,89 @@ export function calculateCashToClose({
 
   return { downPayment, closingCosts, total, byPerson };
 }
+
+// Monthly rent flow for the Sankey: who pays in, the shared pots, and where
+// the money goes. Rent covers costs first; any gap is topped up by the owners
+// in equity proportion, and any surplus is distributed the same way.
+export function buildRentFlow({
+  isRental,
+  userRent,
+  coOwnerRent,
+  totalRent,
+  costs,
+  split = EQUITY_SPLIT,
+}) {
+  const people = {
+    user: { label: "You", share: split.user },
+    coOwner: { label: "Co-owner", share: split.coOwner },
+    investor: { label: "Investor", share: split.investor },
+  };
+  const rentIn = isRental
+    ? [{ person: "tenant", value: totalRent }]
+    : [
+        { person: "user", value: userRent },
+        { person: "coOwner", value: coOwnerRent },
+      ];
+  const rent = rentIn.reduce((s, r) => s + r.value, 0);
+  const costRows = [
+    { id: "interest", label: "Mortgage interest", value: costs.interest },
+    { id: "propertyTax", label: "Property tax", value: costs.propertyTax },
+    { id: "hoa", label: "HOA", value: costs.hoa },
+    { id: "opex", label: "Operating costs", value: costs.opex ?? 0 },
+    { id: "principal", label: "Principal (equity)", value: costs.principal },
+  ].filter((c) => c.value > 0.005);
+  const totalCosts = costRows.reduce((s, c) => s + c.value, 0);
+  const topUp = Math.max(0, totalCosts - rent);
+  const surplus = Math.max(0, rent - totalCosts);
+  const order = isRental
+    ? ["tenant", "investor", "user", "coOwner"]
+    : ["user", "coOwner", "investor"];
+
+  const nodes = [];
+  const links = [];
+  for (const person of order) {
+    const rentPaid = rentIn.find((r) => r.person === person)?.value ?? 0;
+    const topUpPaid = topUp * (people[person]?.share ?? 0);
+    if (rentPaid + topUpPaid <= 0.005) continue;
+    nodes.push({
+      id: `in-${person}`,
+      kind: person,
+      label: people[person]?.label ?? "Tenant",
+      column: 0,
+      value: rentPaid + topUpPaid,
+    });
+    if (rentPaid > 0.005)
+      links.push({ source: `in-${person}`, target: "pot", value: rentPaid });
+    if (topUpPaid > 0.005)
+      links.push({ source: `in-${person}`, target: "topUp", value: topUpPaid });
+  }
+  nodes.push({ id: "pot", kind: "pot", label: "Rent pot", column: 1, value: rent });
+  if (topUp > 0.005)
+    nodes.push({ id: "topUp", kind: "topUp", label: "Owner top-up", column: 1, value: topUp });
+
+  const uses = costRows.map((c) => ({ ...c, kind: c.id }));
+  if (surplus > 0.005)
+    for (const person of ["investor", "user", "coOwner"])
+      uses.push({
+        id: `out-${person}`,
+        kind: person,
+        label: `${people[person].label} (${Math.round(people[person].share * 100)}%)`,
+        value: surplus * people[person].share,
+      });
+  for (const use of uses) nodes.push({ ...use, column: 2 });
+
+  // Fill uses in order from the rent pot, then from the top-up, so ribbons
+  // never cross between the middle and right columns.
+  const sources = [{ id: "pot", left: rent }, { id: "topUp", left: topUp }];
+  for (const use of uses) {
+    let need = use.value;
+    for (const src of sources) {
+      const amount = Math.min(need, src.left);
+      if (amount > 0.005) links.push({ source: src.id, target: use.id, value: amount });
+      src.left -= amount;
+      need -= amount;
+    }
+  }
+
+  return { nodes, links, rent, totalCosts, topUp, surplus };
+}

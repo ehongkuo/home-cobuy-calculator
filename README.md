@@ -9,7 +9,7 @@ This interactive React application was built to simulate the complex financial b
 The app has five tabs. A **Year** slider in the top bar drives every tab. The **Owner / Rental** toggle switches Cash Flow and Taxes between the owner-occupied and rental views without changing the year; Long-Term and Buy vs Rent follow the **Move Out** year as a timeline. A **Tax Savings** toggle turns the tax shield on or off everywhere.
 
 ### 1. Cash Flow 💵
-The "Total Rent Pot" and how it splits between an investor (50%), you (25%), and a co-owner (25%), with each person's net monthly cash flow.
+The total monthly payment, how much of it the rent pot covers, and how any gap (or surplus) splits between an investor (50%), you (25%), and a co-owner (25%). A Sankey chart shows where the money goes in owner and rental modes, followed by each person's net monthly cash flow.
 
 ### 2. Loan 📈
 How the mortgage payment is derived, plus the full 30-year amortization schedule with the selected year highlighted.
