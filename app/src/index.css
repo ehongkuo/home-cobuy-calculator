@@ -2156,3 +2156,274 @@ button:focus:not(:focus-visible) {
 .sankey-wrap svg.is-compact .sankey-text {
   font-size: 11px;
 }
+
+/* ============================================================
+   OWNERS — editable owner list
+   ============================================================ */
+.owners-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.owners-row {
+  display: grid;
+  grid-template-columns: 10px minmax(120px, 1.6fr) repeat(2, minmax(80px, 0.8fr)) minmax(110px, 1fr) 44px 28px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+}
+
+.owners-row.is-you {
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+.owners-head,
+.owners-foot {
+  background: none;
+  border-color: transparent;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.owners-foot {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.8rem;
+}
+
+.owner-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.owner-cell-label {
+  display: none;
+}
+
+.owner-name input,
+.owner-number-box {
+  width: 100%;
+  min-width: 0;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.owner-name input:focus,
+.owner-number-box:focus-within {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.owner-number-box {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.owner-number-box span {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.owner-number-box input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+}
+
+.owner-number-box input:focus {
+  outline: none;
+}
+
+.owner-you {
+  display: flex;
+  justify-content: center;
+}
+
+.owner-you input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
+.owner-remove {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.owner-remove:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--negative);
+}
+
+.owner-remove:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.owners-total {
+  text-align: right;
+  padding-right: 8px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.owners-total.is-off {
+  color: var(--warning);
+}
+
+.owners-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 10px;
+}
+
+.owners-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px dashed rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.08);
+  color: #a5b4fc;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.owners-add:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.owners-warning {
+  font-size: 0.8rem;
+  color: var(--warning);
+}
+
+@media (max-width: 768px) {
+  .owners-head {
+    display: none;
+  }
+
+  .owners-row {
+    grid-template-columns: 10px minmax(0, 1fr) minmax(0, 1fr) 28px;
+    grid-template-areas:
+      "swatch name name remove"
+      ". equity title ."
+      ". rent you .";
+    padding: 10px;
+  }
+
+  .owner-swatch { grid-area: swatch; }
+  .owner-name { grid-area: name; }
+  .owner-equity { grid-area: equity; }
+  .owner-title { grid-area: title; }
+  .owner-rent { grid-area: rent; }
+  .owner-you { grid-area: you; }
+  .owner-remove { grid-area: remove; }
+
+  .owner-number {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .owner-cell-label {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+  }
+
+  .owner-you {
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding-top: 14px;
+  }
+
+  .owners-foot {
+    grid-template-areas: none;
+    grid-template-columns: 10px repeat(4, minmax(0, 1fr));
+  }
+
+  .owners-foot > span:nth-child(n + 6) {
+    display: none;
+  }
+}
+
+/* ============================================================
+   SCENARIO — share / export / import
+   ============================================================ */
+.scenario-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.scenario-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scenario-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.scenario-status {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}

@@ -6,11 +6,21 @@ import {
   buildRentFlow,
   calculateScheduleATaxSavings,
   calculateCashToClose,
+  calculateOwnerCashFlows,
   calculateCumulativeRentalTaxSavings,
   calculateMortgagePayment,
   calculateNetWorthComparison,
   valueInYear,
 } from "./financialModel.js";
+import {
+  DEFAULT_INPUTS,
+  DEFAULT_OWNERS,
+  decodeInputs,
+  encodeInputs,
+  inputsFromHash,
+  newOwner,
+  normalizeInputs,
+} from "./scenario.js";
 
 const closeTo = (actual, expected, tolerance = 0.01) => {
   assert.ok(
@@ -112,13 +122,14 @@ test("cash to close splits down payment and closing costs by equity share", () =
   const result = calculateCashToClose({
     purchasePrice: 1050000,
     downPaymentPercent: 20,
+    owners: DEFAULT_OWNERS,
   });
 
   assert.equal(result.downPayment, 210000);
   assert.equal(result.closingCosts, 21000);
   assert.equal(result.total, 231000);
   assert.equal(result.byPerson.investor.total, 115500);
-  assert.equal(result.byPerson.user.total, 57750);
+  assert.equal(result.byPerson.you.total, 57750);
   assert.equal(result.byPerson.coOwner.downPayment, 52500);
 });
 
@@ -129,15 +140,14 @@ const sumLinks = (flow, key, id) =>
 test("rent flow splits an owner-mode shortfall 50/25/25 and balances every node", () => {
   const flow = buildRentFlow({
     isRental: false,
-    userRent: 3200,
-    coOwnerRent: 3000,
+    owners: DEFAULT_OWNERS,
     totalRent: 6200,
     costs: rentFlowCosts,
   });
   assert.equal(flow.topUp, 1300);
   assert.equal(flow.surplus, 0);
   assert.equal(sumLinks(flow, "source", "in-investor"), 650);
-  assert.equal(sumLinks(flow, "source", "in-user"), 3200 + 325);
+  assert.equal(sumLinks(flow, "source", "in-you"), 3200 + 325);
   for (const node of flow.nodes) {
     if (node.column > 0) closeTo(sumLinks(flow, "target", node.id), node.value);
     if (node.column < 2) closeTo(sumLinks(flow, "source", node.id), node.value);
@@ -147,6 +157,7 @@ test("rent flow splits an owner-mode shortfall 50/25/25 and balances every node"
 test("rent flow distributes a rental surplus and skips the top-up", () => {
   const flow = buildRentFlow({
     isRental: true,
+    owners: DEFAULT_OWNERS,
     totalRent: 9000,
     costs: { ...rentFlowCosts, opex: 500 },
   });
@@ -157,4 +168,62 @@ test("rent flow distributes a rental surplus and skips the top-up", () => {
     ["in-tenant"],
   );
   assert.equal(flow.nodes.find((n) => n.id === "out-investor").value, 500);
+});
+
+const twoOwners = [
+  { id: "a", name: "Alex", equity: 60, title: 60, rent: 2500, color: "#818cf8", isYou: true },
+  { id: "b", name: "Blair", equity: 40, title: 40, rent: 2000, color: "#c084fc" },
+];
+
+test("rent flow and owner cash flows work for two owners", () => {
+  const flow = buildRentFlow({ isRental: false, owners: twoOwners, totalRent: 4500, costs: rentFlowCosts });
+  assert.equal(flow.topUp, 3000);
+  assert.equal(sumLinks(flow, "source", "in-a"), 2500 + 1800);
+  const rows = calculateOwnerCashFlows({
+    owners: twoOwners,
+    isRental: false,
+    totalRent: 4500,
+    costs: { mortgage: 5000, propertyTax: 1000, hoa: 1500 },
+    taxShieldFor: (o) => o.title,
+  });
+  closeTo(rows[0].net, 4500 * 0.6 - 7500 * 0.6 - 2500 + 60);
+  closeTo(rows.reduce((s, r) => s + r.net - r.taxShield + r.rentPaid, 0), 4500 - 7500);
+});
+
+test("owner cash flows split four owners and include opex only when rented", () => {
+  const owners = [...twoOwners.map((o) => ({ ...o, equity: 25 })), newOwner(twoOwners), newOwner([...twoOwners, newOwner(twoOwners)])]
+    .map((o) => ({ ...o, equity: 25 }));
+  const costs = { mortgage: 4000, propertyTax: 1000, hoa: 1000, opex: 400 };
+  const rental = calculateOwnerCashFlows({ owners, isRental: true, totalRent: 6000, costs });
+  rental.forEach((r) => closeTo(r.net, (6000 - 6400) / 4));
+  const owner = calculateOwnerCashFlows({ owners, isRental: false, totalRent: 4500, costs });
+  closeTo(owner[2].net, (4500 - 6000) / 4);
+});
+
+test("scenario round-trips through the URL hash", () => {
+  const inputs = { ...DEFAULT_INPUTS, owners: twoOwners, purchasePrice: 800000 };
+  const restored = inputsFromHash(`#s=${encodeInputs(inputs)}`);
+  assert.deepEqual(restored, normalizeInputs(inputs));
+  assert.equal(restored.owners[1].name, "Blair");
+  assert.equal(decodeInputs("not-base64!"), null);
+});
+
+test("scenario normalization repairs bad input", () => {
+  const fixed = normalizeInputs({
+    purchasePrice: "abc",
+    owners: [
+      { id: "x", name: "", equity: 150, rent: -5 },
+      { id: "x", name: "Dup", isYou: true },
+      { id: "y", isYou: true },
+      ...Array(5).fill({ name: "Extra" }),
+    ],
+  });
+  assert.equal(fixed.purchasePrice, DEFAULT_INPUTS.purchasePrice);
+  assert.equal(fixed.owners.length, 5);
+  assert.equal(fixed.owners[0].equity, 100);
+  assert.equal(fixed.owners[0].rent, 0);
+  assert.notEqual(fixed.owners[1].id, "x");
+  assert.equal(fixed.owners.filter((o) => o.isYou).length, 1);
+  assert.equal(fixed.owners[1].isYou, true);
+  assert.deepEqual(normalizeInputs(null).owners, DEFAULT_OWNERS);
 });

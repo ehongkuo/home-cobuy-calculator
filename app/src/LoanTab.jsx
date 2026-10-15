@@ -3,6 +3,7 @@ import { CalendarDays, PiggyBank } from "lucide-react";
 import { formatCurrency } from "./utils";
 
 function LoanTab({
+  owners,
   purchasePrice,
   downPaymentPercent,
   cashToClose,
@@ -38,16 +39,12 @@ function LoanTab({
             </div>
           </div>
           <div className="cash-to-close-split">
-            {[
-              ["investor", "Investor"],
-              ["user", "You"],
-              ["coOwner", "Co-owner"],
-            ].map(([key, label]) => {
-              const person = cashToClose.byPerson[key];
+            {owners.map((owner) => {
+              const person = cashToClose.byPerson[owner.id];
               return (
-                <div key={key} className={`cash-person ${key === "user" ? "cash-person-you" : ""}`}>
+                <div key={owner.id} className={`cash-person ${owner.isYou ? "cash-person-you" : ""}`}>
                   <div className="cash-person-label">
-                    {label} ({Math.round(person.share * 100)}%)
+                    {owner.name} ({Number((person.share * 100).toFixed(2))}%)
                   </div>
                   <div className="cash-person-total">{formatCurrency(person.total)}</div>
                   <div className="cash-person-detail">

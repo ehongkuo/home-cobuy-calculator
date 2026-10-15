@@ -11,6 +11,7 @@ function LongTermTab({
   hoaInflation,
   appreciation,
   moveOutYear,
+  exclusionOwners = 2,
 }) {
   const [showFullTable, setShowFullTable] = useState(false);
 
@@ -64,7 +65,7 @@ function LongTermTab({
 
       const capitalGain = marketValue - purchasePrice;
       const exclusionPerPerson = 250000;
-      const totalExclusion = exclusionPerPerson * 2; // both co-owners
+      const totalExclusion = exclusionPerPerson * exclusionOwners; // each resident on title
       const taxableGain = excluded
         ? Math.max(0, capitalGain - totalExclusion)
         : Math.max(0, capitalGain);
@@ -98,6 +99,7 @@ function LongTermTab({
     hoaInflation,
     appreciation,
     moveOutYear,
+    exclusionOwners,
   ]);
 
   // Quick-access rows for the summary cards
@@ -275,9 +277,11 @@ function LongTermTab({
         <div>
           <h2 style={{ marginTop: 0 }}>Section 121 Tax-Free Capital Gains Window</h2>
           <p>
-            The IRS lets each co-owner exclude up to $250,000 of gain ($500,000
-            combined) if they lived in the home for 2 of the 5 years before
-            selling.
+            The IRS lets each owner on title exclude up to $250,000 of gain if
+            they lived in the home for 2 of the 5 years before selling. This
+            scenario has {exclusionOwners} qualifying{" "}
+            {exclusionOwners === 1 ? "owner" : "owners"} (on title and paying
+            rent), so up to {formatCurrency(250000 * exclusionOwners)} combined.
           </p>
           <p style={{ color: "#f87171", marginTop: "8px", marginBottom: 0 }}>
             Moving out after <strong>Year {moveOutYear}</strong> starts the clock
