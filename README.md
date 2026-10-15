@@ -74,7 +74,7 @@ Vercel and Netlify work the same way with the same three settings.
 
 ### GitHub Pages (fallback)
 
-`.github/workflows/pages.yml` builds with `BASE_PATH=/<repo>/` and deploys to `https://<user>.github.io/<repo>/` on every push to `main`. To use it, set **Settings → Pages → Source** to **GitHub Actions**. It has no PR previews; delete the workflow if you use Cloudflare.
+`.github/workflows/pages.yml` builds with `BASE_PATH=/<repo>/` and deploys to `https://<user>.github.io/<repo>/` on every push to `main`. It is off by default. To turn it on, set **Settings → Pages → Source** to **GitHub Actions** and add a repository variable `DEPLOY_PAGES` = `true` (**Settings → Secrets and variables → Actions → Variables**). It has no PR previews.
 
 ### CI and branch protection
 
