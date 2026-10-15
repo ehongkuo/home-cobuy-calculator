@@ -60,7 +60,7 @@ export function AssumptionSlider({
   return (
     <div className="assumption">
       <div className="assumption-head">
-        <label htmlFor={id} className="assumption-label">
+        <label htmlFor={id} className="assumption-label" title={hint}>
           {Icon && <Icon size={14} />}
           {label}
         </label>
@@ -101,11 +101,6 @@ export function AssumptionSlider({
         style={{ "--fill": `${fill}%` }}
         aria-valuetext={formatValue(value, format)}
       />
-      <div className="assumption-scale">
-        <span>{formatValue(min, format)}</span>
-        {hint && <span className="assumption-hint">{hint}</span>}
-        <span>{formatValue(max, format)}</span>
-      </div>
     </div>
   );
 }

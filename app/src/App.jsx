@@ -370,6 +370,8 @@ function App() {
             coOwnerNet={coOwnerNet}
             propertyCosts={propertyCosts}
             mortgage={mortgage}
+            monthlyInterest={monthlyInterest}
+            monthlyPrincipal={monthlyPrincipal}
             propertyTax={propertyTax}
             hoa={hoa}
             totalOperatingExpenses={totalOperatingExpenses}
