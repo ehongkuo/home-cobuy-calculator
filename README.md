@@ -47,3 +47,35 @@ To run this project locally on your machine:
    npm test
    npm run lint
    ```
+
+## Deploying
+
+The app is a static site with no backend. Scenario inputs live in the URL hash (`#s=…`), which browsers never send to the server.
+
+### Cloudflare Pages (recommended)
+
+In the Cloudflare dashboard, go to **Workers & Pages → Create → Pages → Connect to Git**, pick this repo, and use:
+
+| Setting | Value |
+| --- | --- |
+| Production branch | `main` |
+| Framework preset | None (or Vite) |
+| Root directory | `app` |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+
+After that:
+
+- Every pull request gets its own preview URL, posted on the PR.
+- Merging to `main` deploys production.
+- To roll back, open the project's **Deployments** list and choose **Rollback** on an earlier build.
+
+Vercel and Netlify work the same way with the same three settings.
+
+### GitHub Pages (fallback)
+
+`.github/workflows/pages.yml` builds with `BASE_PATH=/<repo>/` and deploys to `https://<user>.github.io/<repo>/` on every push to `main`. To use it, set **Settings → Pages → Source** to **GitHub Actions**. It has no PR previews; delete the workflow if you use Cloudflare.
+
+### CI and branch protection
+
+`.github/workflows/ci.yml` runs tests, lint and a build on every PR and push to `main`. Turn on branch protection so nothing broken reaches production: **Settings → Branches → Add rule** for `main`, enable **Require status checks to pass before merging**, and select the `test` check.
