@@ -8,6 +8,7 @@ import {
   Scale,
   Clock,
   Sliders,
+  User,
   Users,
   Wrench,
   Percent,
@@ -411,8 +412,24 @@ function App() {
         </h2>
         {activeTab === "cashflow" && (
           <>
-          <OwnersPanel owners={owners} setOwners={setOwners} isRental={isRental} />
-          <AssumptionPanel title="Rent" note={isRental ? "Rental view: tenant rent applies" : "Owner-occupied view: residents' rent from the owners table applies"}>
+          <OwnersPanel owners={owners} setOwners={setOwners} />
+          <AssumptionPanel title="Rent" note={isRental ? "Rental view: tenant rent applies" : "Owner-occupied view: residents' rent applies"}>
+              {owners
+                .filter((o) => o.rent > 0)
+                .map((o) => (
+                  <AssumptionSlider
+                    key={o.id}
+                    icon={User}
+                    label={o.isYou && o.name === "You" ? "Your Rent" : `${o.name}'s Rent`}
+                    hint="owner view"
+                    value={o.rent}
+                    setValue={(rent) => setOwners((list) => list.map((x) => (x.id === o.id ? { ...x, rent } : x)))}
+                    min={500}
+                    max={10000}
+                    step={50}
+                    format="currency/mo"
+                  />
+                ))}
               <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental view" value={tenantRent} setValue={setTenantRent} min={1000} max={20000} step={100} format="currency/mo" />
               <AssumptionSlider icon={Wrench} label="Operating Expenses" hint="% of price / yr" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
               <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />

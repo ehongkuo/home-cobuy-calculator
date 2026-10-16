@@ -2168,7 +2168,7 @@ button:focus:not(:focus-visible) {
 
 .owners-row {
   display: grid;
-  grid-template-columns: 10px minmax(120px, 1.6fr) repeat(2, minmax(80px, 0.8fr)) minmax(110px, 1fr) 44px 28px;
+  grid-template-columns: 10px minmax(120px, 1.6fr) repeat(2, minmax(80px, 0.8fr)) 84px 44px 28px;
   align-items: center;
   gap: 10px;
   padding: 6px 10px;
@@ -2255,11 +2255,13 @@ button:focus:not(:focus-visible) {
   outline: none;
 }
 
-.owner-you {
+.owner-you,
+.owner-resident {
   display: flex;
   justify-content: center;
 }
 
+.owner-resident input,
 .owner-you input {
   width: 16px;
   height: 16px;
@@ -2328,6 +2330,100 @@ button:focus:not(:focus-visible) {
   cursor: default;
 }
 
+.owners-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-blue);
+  background: var(--accent-blue);
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Collapsed owners: one line of chips plus an Edit button */
+.owners-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+}
+
+.owners-summary-main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.owners-summary h3 {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a5b4fc;
+}
+
+.owners-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.owners-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.owners-chips li.is-you {
+  border-color: rgba(99, 102, 241, 0.45);
+  color: var(--text-primary);
+}
+
+.owners-chips .owner-swatch {
+  width: 8px;
+  height: 8px;
+}
+
+.owners-chips strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.owners-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-accent);
+  background: rgba(99, 102, 241, 0.1);
+  color: #a5b4fc;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .owners-warning {
   font-size: 0.8rem;
   color: var(--warning);
@@ -2343,7 +2439,7 @@ button:focus:not(:focus-visible) {
     grid-template-areas:
       "swatch name name remove"
       ". equity title ."
-      ". rent you .";
+      ". resident you .";
     padding: 10px;
   }
 
@@ -2351,7 +2447,7 @@ button:focus:not(:focus-visible) {
   .owner-name { grid-area: name; }
   .owner-equity { grid-area: equity; }
   .owner-title { grid-area: title; }
-  .owner-rent { grid-area: rent; }
+  .owner-resident { grid-area: resident; }
   .owner-you { grid-area: you; }
   .owner-remove { grid-area: remove; }
 
@@ -2373,7 +2469,8 @@ button:focus:not(:focus-visible) {
     font-size: 16px;
   }
 
-  .owner-you {
+  .owner-you,
+  .owner-resident {
     align-items: center;
     justify-content: flex-start;
     gap: 8px;
