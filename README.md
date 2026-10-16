@@ -50,9 +50,9 @@ To run this project locally on your machine:
 
 ## Deploying
 
-The app is a static site with no backend. Scenario inputs live in the URL hash (`#s=…`), which browsers never send to the server.
+The app is a static site hosted on Cloudflare Pages. It has no backend: scenario inputs live in the URL hash (`#s=…`), which browsers never send to the server.
 
-### Cloudflare Pages (recommended)
+### One-time setup
 
 In the Cloudflare dashboard, go to **Workers & Pages → Create → Pages → Connect to Git**, pick this repo, and use:
 
@@ -64,17 +64,18 @@ In the Cloudflare dashboard, go to **Workers & Pages → Create → Pages → Co
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 
-After that:
+### How updates ship
 
 - Every pull request gets its own preview URL, posted on the PR.
-- Merging to `main` deploys production.
+- Merging to `main` deploys production at `<project>.pages.dev`.
 - To roll back, open the project's **Deployments** list and choose **Rollback** on an earlier build.
 
-Vercel and Netlify work the same way with the same three settings.
+### Limiting who can open it
 
-### GitHub Pages (fallback)
+The site is public by default. Anyone with a **Share** link also sees that scenario's numbers. To restrict the site to the owners, put Cloudflare Access (free for up to 50 users) in front of it:
 
-`.github/workflows/pages.yml` builds with `BASE_PATH=/<repo>/` and deploys to `https://<user>.github.io/<repo>/` on every push to `main`. It is off by default. To turn it on, set **Settings → Pages → Source** to **GitHub Actions** and add a repository variable `DEPLOY_PAGES` = `true` (**Settings → Secrets and variables → Actions → Variables**). It has no PR previews.
+- **Production:** **Zero Trust → Access → Applications → Add an application → Self-hosted**, set the domain to `<project>.pages.dev`, and add a policy allowing the owners' emails.
+- **Previews:** in the Pages project, open **Settings → General** and enable the access policy for preview deployments.
 
 ### CI and branch protection
 
