@@ -261,7 +261,7 @@ function App() {
       {/* ─── TOP BAR ─── */}
       <header className={`topbar ${assumptionsOpen ? "assumptions-open" : ""}`}>
         <div className="topbar-row">
-          <h1 className="topbar-title">SF Condo Financial Model</h1>
+          <h1 className="topbar-title">Real Estate Co-Buy Calculator</h1>
 
           <div className="year-control">
             <label htmlFor="projection-year" className="year-control-label">
