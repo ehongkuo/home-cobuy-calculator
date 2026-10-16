@@ -1,4 +1,4 @@
-# SF Condo Financial Model 🏢
+# Real Estate Co-Buy Calculator 🏢
 
 Welcome to the financial model for SF condo purchases
 
