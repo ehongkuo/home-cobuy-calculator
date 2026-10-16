@@ -1,31 +1,57 @@
 # Real Estate Co-Buy Calculator 🏢
 
-Welcome to the financial model for SF condo purchases
+**Try it:** https://home-cobuy-calculator.ehongkuo.workers.dev
 
-This interactive React application was built to simulate the complex financial breakdown of a shared co-investment in San Francisco real estate. It helps clarify exactly how the cash flow, tax deductions, and property math shake out.
+Buying a home with other people raises questions a normal mortgage calculator can't answer. Who covers the gap when rent doesn't cover the payment? What does each owner actually pay each month? What happens to taxes when the people living there move out and it becomes a rental? Would you be better off just renting?
 
-## What's Inside?
+This calculator models one specific arrangement and walks through the math in plain numbers:
 
-The app has five tabs. A **Year** slider in the top bar drives every tab. The **Owner / Rental** toggle switches Cash Flow and Taxes between the owner-occupied and rental views without changing the year; Long-Term and Buy vs Rent follow the **Move Out** year as a timeline. A **Tax Savings** toggle turns the tax shield on or off everywhere.
+- **Three owners:** an investor who puts in 50% and two owner-occupants (you and a co-owner) at 25% each.
+- **The two of you live there and pay rent** into a shared pot that goes toward the mortgage, HOA and property tax.
+- **After you move out**, the place is rented to a tenant and held in an LLC.
 
-### 1. Cash Flow 💵
-The total monthly payment, how much of it the rent pot covers, and how any gap (or surplus) splits between an investor (50%), you (25%), and a co-owner (25%). A Sankey chart shows where the money goes in owner and rental modes, followed by each person's net monthly cash flow.
+It works on a phone or a computer. Nothing you enter is saved or sent anywhere. Reloading the page resets everything to the defaults.
 
-### 2. Loan 📈
-How the mortgage payment is derived, plus the full 30-year amortization schedule with the selected year highlighted.
+## How to use it
 
-### 3. Taxes ⚖️
-Owner years: the Schedule A deduction (SALT cap, $750k mortgage debt limit, standard deduction). Rental years: the LLC K-1 view (depreciation, operating expenses, REPS assumption) and depreciation recapture.
+1. **Set the deal terms:** price, down payment, interest rate, HOA, property tax and the year you plan to move out. On a phone, tap **Deal terms** at the top.
+2. **Pick a year** with the **Year** slider. Every tab shows that year's numbers.
+3. **Switch between Owner and Rental** to compare living there with renting it out.
+4. **Turn Tax Savings on or off** to see the numbers with or without tax deductions.
+5. **Fill in the inputs on each tab:** rents, growth rates, your budget. On a phone, tap a value to open a scroll wheel.
+6. **Hover over (or tap) any dotted-underlined number** to see how it was calculated.
 
-### 4. Long-Term 🏗️
-A 30-year projection of value, equity, HOA growth, and the Section 121 exclusion window after move-out.
+## What each tab answers
 
-### 5. Buy vs Rent 📊
-Month-by-month opportunity cost: buying the condo vs. renting and investing the difference in the S&P 500.
+| Tab | The question it answers |
+| --- | --- |
+| 💵 **Cash Flow** | What's the monthly payment, how much does rent cover, and what does each owner pay or receive? |
+| 📈 **Loan** | How is the mortgage payment calculated, and how much is interest vs. principal each year? |
+| ⚖️ **Taxes** | How much do mortgage interest and property tax deductions save? In rental years, what do depreciation and expenses do to the LLC's taxes? |
+| 🏗️ **Long-Term** | What's the home worth and how much equity is there over 30 years? How long can you sell without capital gains tax after moving out? |
+| 📊 **Buy vs Rent** | Would you come out ahead buying, or renting and investing the difference in the S&P 500? |
 
-Tax constants (W-2 income, CA state tax, SALT cap, standard deduction) live in `TAX_ASSUMPTIONS` in `app/src/financialModel.js`.
+The Cash Flow tab also warns you if the investor's yearly contribution is big enough that gift tax rules might apply.
 
-## Getting Started
+## Things to know
+
+- **The ownership split is fixed** at 50 / 25 / 25.
+- **Tax rules are simplified.** The tax math uses fixed assumptions: $200k W-2 income, California state tax, the SALT cap, the standard deduction, the $750k mortgage debt limit and a 24% bracket. It also assumes real estate professional status for rental losses. If your situation differs, the tax numbers will too. Developers can change these in `TAX_ASSUMPTIONS` in `app/src/financialModel.js`.
+- **It's a model, not advice.** Use it to understand the shape of a deal and to have better conversations with your co-buyers, lender and tax professional. Don't use it as financial, tax or legal advice.
+
+## For developers
+
+### Tabs in detail
+
+The **Year** slider drives every tab. The **Owner / Rental** toggle switches Cash Flow and Taxes between views. Long-Term and Buy vs Rent follow the **Move Out** year as a timeline. **Tax Savings** turns the tax shield on or off everywhere.
+
+- **Cash Flow:** total payment, rent-pot coverage, and the gap or surplus split 50/25/25. Includes a Sankey chart and each owner's net.
+- **Loan:** how the payment is derived, plus the 30-year amortization schedule.
+- **Taxes:** Schedule A in owner years (SALT cap, $750k debt limit, standard deduction). The LLC K-1 view in rental years (depreciation, operating expenses, REPS) and depreciation recapture.
+- **Long-Term:** value, equity, HOA growth and the Section 121 exclusion window.
+- **Buy vs Rent:** month-by-month opportunity cost against the S&P 500.
+
+### Running locally
 
 To run this project locally on your machine:
 
