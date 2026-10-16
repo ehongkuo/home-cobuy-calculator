@@ -2156,3 +2156,507 @@ button:focus:not(:focus-visible) {
 .sankey-wrap svg.is-compact .sankey-text {
   font-size: 11px;
 }
+
+/* ============================================================
+   OWNER CARDS — monthly net per owner (collapsible on phones)
+   ============================================================ */
+.owner-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.owner-card.is-you {
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.05);
+}
+
+.owner-card-head {
+  display: block;
+  width: 100%;
+  padding: 0 0 16px;
+  margin-bottom: 16px;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.owner-card-title {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.owner-card.is-you .owner-card-title {
+  color: var(--accent-blue);
+  font-weight: 700;
+}
+
+.owner-card-net {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.owner-card-net.is-positive {
+  color: var(--positive);
+}
+
+.owner-card-unit {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.owner-card-chevron {
+  display: none;
+}
+
+.owner-card-body {
+  flex: 1;
+}
+
+/* Cash to close: name + amount per person */
+.cash-strip-title strong,
+.cash-strip-person strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.cash-strip-person strong {
+  font-weight: 600;
+}
+
+/* Sankey legend (narrow charts only) */
+.sankey-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 14px;
+  margin-top: 10px;
+}
+
+.sankey-legend ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sankey-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.8rem;
+}
+
+.sankey-swatch {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.sankey-legend-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.sankey-legend-amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   MOBILE — labeled tab bar, touch-size controls, safe areas
+   ============================================================ */
+.net-label-short {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* dvh tracks the visible area as mobile browser toolbars show and hide */
+  .app-layout {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* Bottom tab bar: icon + label, clear of the iPhone home indicator */
+  .sidebar {
+    height: calc(60px + env(safe-area-inset-bottom));
+    padding: 0 4px env(safe-area-inset-bottom);
+  }
+
+  .sidebar-btn {
+    flex: 1;
+    width: auto;
+    height: 52px;
+    flex-direction: column;
+    gap: 3px;
+    font-size: inherit;
+  }
+
+  .sidebar-btn.active {
+    border-bottom: none;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Touch screens keep :hover after a tap, which looked like a second active tab */
+  .sidebar-btn:not(.active):hover {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .sidebar-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .main-content {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  /* Compact top bar */
+  .topbar {
+    gap: 8px;
+    padding: 8px 16px 10px;
+  }
+
+  .topbar-row {
+    gap: 8px 12px;
+  }
+
+  .net-badge {
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .net-label-long {
+    display: none;
+  }
+
+  .net-label-short {
+    display: inline;
+  }
+
+  /* Tap targets: at least ~36-44px tall */
+  .topbar-status {
+    gap: 6px;
+  }
+
+  .topbar-badge {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 0.8rem;
+  }
+
+  .occupancy-toggle {
+    width: auto;
+    min-width: 72px;
+  }
+
+  .occupancy-toggle svg {
+    display: none;
+  }
+
+  .tax-toggle input {
+    width: 18px;
+    height: 18px;
+  }
+
+  .mobile-assumptions-toggle {
+    min-height: 40px;
+  }
+
+  .cash-strip-link {
+    min-height: 44px;
+    padding: 0 4px;
+  }
+
+  /* Amortization table: keep the Year column visible while scrolling sideways */
+  .amort-table th:first-child,
+  .amort-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--bg-secondary);
+  }
+
+  .amort-table td:first-child {
+    z-index: 1;
+  }
+
+  .amort-table th:first-child {
+    z-index: 3;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Sankey: less padding so the chart uses the card's full width */
+  .rentflow-chart {
+    padding: 14px 12px 12px;
+  }
+
+  /* Cash to close: title + Details on one line, three even columns below */
+  .cash-strip {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px 12px;
+    padding: 12px 14px;
+  }
+
+  .cash-strip-link {
+    grid-row: 1;
+    grid-column: 2;
+    min-height: 32px;
+  }
+
+  .cash-strip-people {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .cash-strip-person {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.75rem;
+  }
+
+  .cash-strip-person strong {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+  }
+
+  .cash-strip-you strong {
+    color: #a5b4fc;
+  }
+
+  /* Owner cards: one tappable row each, breakdown on demand */
+  .grid-3:has(> .owner-card) {
+    gap: 10px;
+  }
+
+  .owner-card {
+    padding: 0;
+  }
+
+  .owner-card:hover {
+    transform: none;
+  }
+
+  .owner-card-head {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 56px;
+    padding: 12px 14px;
+    margin: 0;
+    border-bottom: 0;
+    cursor: pointer;
+  }
+
+  .owner-card-title {
+    font-size: 0.75rem;
+  }
+
+  .owner-card-net {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .owner-card-unit {
+    font-size: 0.75rem;
+  }
+
+  .owner-card-chevron {
+    display: block;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+  }
+
+  .owner-card.is-open .owner-card-chevron {
+    transform: rotate(180deg);
+  }
+
+  .owner-card-body {
+    display: none;
+    padding: 0 14px 10px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .owner-card.is-open .owner-card-body {
+    display: block;
+  }
+}
+
+/* ============================================================
+   WHEEL FIELDS — phones swap sliders for tap-to-open scroll wheels
+   ============================================================ */
+.wheel-field {
+  min-width: 0;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+}
+
+.wheel-field.is-open {
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.wheel-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wheel-field-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.wheel-field-label svg {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.wheel-field-label span {
+  white-space: nowrap;
+}
+
+.wheel-field-label small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.wheel-field-value {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.wheel-field.is-open .wheel-field-value {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+}
+
+.wheel {
+  position: relative;
+  margin: 0 8px 8px;
+  perspective: 600px;
+  /* Fade rows out toward the top and bottom edges */
+  mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+}
+
+.wheel-band {
+  position: absolute;
+  inset-inline: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+}
+
+.wheel-list {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  transform-style: preserve-3d;
+}
+
+.wheel-list::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel-list:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+.wheel-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  backface-visibility: hidden;
+}
+
+@media (max-width: 768px) {
+  /* A single-column list: each row is one line until it's opened */
+  .global-assumptions,
+  .assumptions-open .global-assumptions,
+  .assumption-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  /* The year slider in the top bar stays a slider: give it a bigger thumb */
+  .assumption-range {
+    height: 8px;
+    margin: 10px 0;
+  }
+
+  .assumption-range::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  .assumption-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+  }
+}

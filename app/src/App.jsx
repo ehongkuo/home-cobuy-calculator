@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   Home,
   DollarSign,
@@ -45,6 +45,12 @@ const TAB_CONFIG = [
 function App() {
   const [activeTab, setActiveTab] = useState("cashflow");
   const [assumptionsOpen, setAssumptionsOpen] = useState(false);
+  const mainRef = useRef(null);
+
+  // Each tab starts at the top instead of keeping the last tab's scroll position.
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0);
+  }, [activeTab]);
 
   // Shared state
   const [userRent, setUserRent] = useState(3200);
@@ -305,7 +311,8 @@ function App() {
               Tax Savings
             </label>
             <span className={`topbar-badge net-badge ${userNet >= 0 ? "badge-green" : "badge-red"}`}>
-              Your net: {formatCurrency(userNet)}/mo
+              <span className="net-label-long">Your net:</span>
+              <span className="net-label-short">Net</span> {formatCurrency(userNet)}/mo
             </span>
           </div>
 
@@ -331,7 +338,7 @@ function App() {
       </header>
 
       {/* ─── MAIN CONTENT ─── */}
-      <main className="main-content" id="main-content">
+      <main className="main-content" id="main-content" ref={mainRef}>
         <h2 className="tab-page-title">
           {activeTab === "cashflow" && "Monthly Cash Flow"}
           {activeTab === "loan" && "Loan Details"}

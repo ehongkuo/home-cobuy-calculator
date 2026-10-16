@@ -1,8 +1,31 @@
-import React from "react";
-import { Info, Home, Receipt, Wallet, TrendingUp, PiggyBank } from "lucide-react";
+import React, { useState } from "react";
+import { Info, Home, Receipt, Wallet, TrendingUp, PiggyBank, ChevronDown } from "lucide-react";
 import { FLOW_COLORS, formatCurrency } from "./utils";
 import { buildRentFlow } from "./financialModel";
 import RentFlowSankey from "./RentFlowSankey";
+
+// One owner's monthly net. On phones the breakdown collapses behind the header.
+const OwnerCard = ({ title, net, highlight = false, children }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`card hover-card owner-card${highlight ? " is-you" : ""}${open ? " is-open" : ""}`}>
+      <button
+        type="button"
+        className="owner-card-head"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="owner-card-title">{title}</span>
+        <span className={`owner-card-net${net >= 0 ? " is-positive" : ""}`}>
+          {formatCurrency(net)}
+          <span className="owner-card-unit">/mo</span>
+        </span>
+        <ChevronDown size={18} className="owner-card-chevron" aria-hidden="true" />
+      </button>
+      <div className="owner-card-body">{children}</div>
+    </div>
+  );
+};
 
 const SummaryRow = ({ kind, label, value, muted = false }) => (
   <div className={`rentflow-row${muted ? " is-muted" : ""}`}>
@@ -171,12 +194,18 @@ function CashFlowTab({
       {/* Upfront cash */}
       <div className="cash-strip">
         <div className="cash-strip-title">
-          <PiggyBank size={16} /> Cash to close: {formatCurrency(cashToClose.total)}
+          <PiggyBank size={16} /> Cash to close <strong>{formatCurrency(cashToClose.total)}</strong>
         </div>
         <div className="cash-strip-people">
-          <span>Investor {formatCurrency(cashToClose.byPerson.investor.total)}</span>
-          <span className="cash-strip-you">You {formatCurrency(cashToClose.byPerson.user.total)}</span>
-          <span>Co-owner {formatCurrency(cashToClose.byPerson.coOwner.total)}</span>
+          <span className="cash-strip-person">
+            <span>Investor</span> <strong>{formatCurrency(cashToClose.byPerson.investor.total)}</strong>
+          </span>
+          <span className="cash-strip-person cash-strip-you">
+            <span>You</span> <strong>{formatCurrency(cashToClose.byPerson.user.total)}</strong>
+          </span>
+          <span className="cash-strip-person">
+            <span>Co-owner</span> <strong>{formatCurrency(cashToClose.byPerson.coOwner.total)}</strong>
+          </span>
         </div>
         <button type="button" className="cash-strip-link" onClick={onShowLoan}>
           Details →
@@ -210,73 +239,49 @@ function CashFlowTab({
       <div className="grid-3" style={{ alignItems: "stretch" }}>
         
         {/* INVESTOR CARD */}
-        <div className="card hover-card" style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ paddingBottom: "16px", borderBottom: "1px solid var(--border-subtle)", marginBottom: "16px" }}>
-            <div style={{ fontSize: "0.8rem", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: 600, letterSpacing: "1px" }}>Investor (50%)</div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 700, color: investorNet >= 0 ? "var(--positive)" : "var(--text-primary)", marginTop: "4px" }}>
-              {formatCurrency(investorNet)}<span style={{ fontSize: "0.9rem", color: "var(--text-muted)", fontWeight: 500 }}>/mo</span>
-            </div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <BreakdownRow icon={Home} label="Property Costs" value={`-${formatCurrency(investorExpenses)}`} />
-            <BreakdownRow label={`Mortgage (50%)`} value={`-${formatCurrency(mortgage * investorShare)}`} isNested />
-            <BreakdownRow label={`Prop Tax (50%)`} value={`-${formatCurrency(propertyTax * investorShare)}`} isNested />
-            <BreakdownRow label={`HOA (50%)`} value={`-${formatCurrency(hoa * investorShare)}`} isNested />
-            {isRental && <BreakdownRow label={`OpEx (50%)`} value={`-${formatCurrency(opExMonthly * investorShare)}`} isNested />}
-            
-            <BreakdownRow icon={Wallet} label="Rent Income" value={`+${formatCurrency(investorRentIncome)}`} color="var(--positive)" />
-          </div>
-        </div>
+        <OwnerCard title="Investor (50%)" net={investorNet}>
+          <BreakdownRow icon={Home} label="Property Costs" value={`-${formatCurrency(investorExpenses)}`} />
+          <BreakdownRow label={`Mortgage (50%)`} value={`-${formatCurrency(mortgage * investorShare)}`} isNested />
+          <BreakdownRow label={`Prop Tax (50%)`} value={`-${formatCurrency(propertyTax * investorShare)}`} isNested />
+          <BreakdownRow label={`HOA (50%)`} value={`-${formatCurrency(hoa * investorShare)}`} isNested />
+          {isRental && <BreakdownRow label={`OpEx (50%)`} value={`-${formatCurrency(opExMonthly * investorShare)}`} isNested />}
+          
+          <BreakdownRow icon={Wallet} label="Rent Income" value={`+${formatCurrency(investorRentIncome)}`} color="var(--positive)" />
+        </OwnerCard>
 
         {/* USER CARD */}
-        <div className="card hover-card" style={{ display: "flex", flexDirection: "column", border: "1px solid rgba(99, 102, 241, 0.3)", boxShadow: "0 0 20px rgba(99, 102, 241, 0.05)" }}>
-          <div style={{ paddingBottom: "16px", borderBottom: "1px solid var(--border-subtle)", marginBottom: "16px" }}>
-            <div style={{ fontSize: "0.8rem", textTransform: "uppercase", color: "var(--accent-blue)", fontWeight: 700, letterSpacing: "1px" }}>You (25%)</div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 700, color: userNet >= 0 ? "var(--positive)" : "var(--text-primary)", marginTop: "4px" }}>
-              {formatCurrency(userNet)}<span style={{ fontSize: "0.9rem", color: "var(--text-muted)", fontWeight: 500 }}>/mo</span>
-            </div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <BreakdownRow icon={Home} label="Property Costs" value={`-${formatCurrency(userExpenses)}`} />
-            <BreakdownRow label={`Mortgage (25%)`} value={`-${formatCurrency(mortgage * userShare)}`} isNested />
-            <BreakdownRow label={`Prop Tax (25%)`} value={`-${formatCurrency(propertyTax * userShare)}`} isNested />
-            <BreakdownRow label={`HOA (25%)`} value={`-${formatCurrency(hoa * userShare)}`} isNested />
-            {isRental && <BreakdownRow label={`OpEx (25%)`} value={`-${formatCurrency(opExMonthly * userShare)}`} isNested />}
-            
-            {!isRental && <BreakdownRow icon={Receipt} label="Rent Paid Out" value={`-${formatCurrency(userRent)}`} />}
-            
-            <BreakdownRow icon={Wallet} label="Rent Income" value={`+${formatCurrency(userRentIncome)}`} color="var(--positive)" />
-            
-            {includeTaxSavings && (
-              <BreakdownRow icon={TrendingUp} label={userTaxShield >= 0 ? "Tax Savings" : "Tax Cost"} value={userTaxShield > 0 ? `+${formatCurrency(userTaxShield)}` : formatCurrency(userTaxShield)} color={userTaxShield >= 0 ? "var(--positive)" : "var(--negative)"} />
-            )}
-          </div>
-        </div>
+        <OwnerCard title="You (25%)" net={userNet} highlight>
+          <BreakdownRow icon={Home} label="Property Costs" value={`-${formatCurrency(userExpenses)}`} />
+          <BreakdownRow label={`Mortgage (25%)`} value={`-${formatCurrency(mortgage * userShare)}`} isNested />
+          <BreakdownRow label={`Prop Tax (25%)`} value={`-${formatCurrency(propertyTax * userShare)}`} isNested />
+          <BreakdownRow label={`HOA (25%)`} value={`-${formatCurrency(hoa * userShare)}`} isNested />
+          {isRental && <BreakdownRow label={`OpEx (25%)`} value={`-${formatCurrency(opExMonthly * userShare)}`} isNested />}
+          
+          {!isRental && <BreakdownRow icon={Receipt} label="Rent Paid Out" value={`-${formatCurrency(userRent)}`} />}
+          
+          <BreakdownRow icon={Wallet} label="Rent Income" value={`+${formatCurrency(userRentIncome)}`} color="var(--positive)" />
+          
+          {includeTaxSavings && (
+            <BreakdownRow icon={TrendingUp} label={userTaxShield >= 0 ? "Tax Savings" : "Tax Cost"} value={userTaxShield > 0 ? `+${formatCurrency(userTaxShield)}` : formatCurrency(userTaxShield)} color={userTaxShield >= 0 ? "var(--positive)" : "var(--negative)"} />
+          )}
+        </OwnerCard>
 
         {/* CO-OWNER CARD */}
-        <div className="card hover-card" style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ paddingBottom: "16px", borderBottom: "1px solid var(--border-subtle)", marginBottom: "16px" }}>
-            <div style={{ fontSize: "0.8rem", textTransform: "uppercase", color: "var(--text-muted)", fontWeight: 600, letterSpacing: "1px" }}>Co-owner (25%)</div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 700, color: coOwnerNet >= 0 ? "var(--positive)" : "var(--text-primary)", marginTop: "4px" }}>
-              {formatCurrency(coOwnerNet)}<span style={{ fontSize: "0.9rem", color: "var(--text-muted)", fontWeight: 500 }}>/mo</span>
-            </div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <BreakdownRow icon={Home} label="Property Costs" value={`-${formatCurrency(coOwnerExpenses)}`} />
-            <BreakdownRow label={`Mortgage (25%)`} value={`-${formatCurrency(mortgage * coOwnerShare)}`} isNested />
-            <BreakdownRow label={`Prop Tax (25%)`} value={`-${formatCurrency(propertyTax * coOwnerShare)}`} isNested />
-            <BreakdownRow label={`HOA (25%)`} value={`-${formatCurrency(hoa * coOwnerShare)}`} isNested />
-            {isRental && <BreakdownRow label={`OpEx (25%)`} value={`-${formatCurrency(opExMonthly * coOwnerShare)}`} isNested />}
-            
-            {!isRental && <BreakdownRow icon={Receipt} label="Rent Paid Out" value={`-${formatCurrency(coOwnerRent)}`} />}
-            
-            <BreakdownRow icon={Wallet} label="Rent Income" value={`+${formatCurrency(coOwnerRentIncome)}`} color="var(--positive)" />
-            
-            {includeTaxSavings && (
-              <BreakdownRow icon={TrendingUp} label={userTaxShield >= 0 ? "Tax Savings" : "Tax Cost"} value={userTaxShield > 0 ? `+${formatCurrency(userTaxShield)}` : formatCurrency(userTaxShield)} color={userTaxShield >= 0 ? "var(--positive)" : "var(--negative)"} />
-            )}
-          </div>
-        </div>
+        <OwnerCard title="Co-owner (25%)" net={coOwnerNet}>
+          <BreakdownRow icon={Home} label="Property Costs" value={`-${formatCurrency(coOwnerExpenses)}`} />
+          <BreakdownRow label={`Mortgage (25%)`} value={`-${formatCurrency(mortgage * coOwnerShare)}`} isNested />
+          <BreakdownRow label={`Prop Tax (25%)`} value={`-${formatCurrency(propertyTax * coOwnerShare)}`} isNested />
+          <BreakdownRow label={`HOA (25%)`} value={`-${formatCurrency(hoa * coOwnerShare)}`} isNested />
+          {isRental && <BreakdownRow label={`OpEx (25%)`} value={`-${formatCurrency(opExMonthly * coOwnerShare)}`} isNested />}
+          
+          {!isRental && <BreakdownRow icon={Receipt} label="Rent Paid Out" value={`-${formatCurrency(coOwnerRent)}`} />}
+          
+          <BreakdownRow icon={Wallet} label="Rent Income" value={`+${formatCurrency(coOwnerRentIncome)}`} color="var(--positive)" />
+          
+          {includeTaxSavings && (
+            <BreakdownRow icon={TrendingUp} label={userTaxShield >= 0 ? "Tax Savings" : "Tax Cost"} value={userTaxShield > 0 ? `+${formatCurrency(userTaxShield)}` : formatCurrency(userTaxShield)} color={userTaxShield >= 0 ? "var(--positive)" : "var(--negative)"} />
+          )}
+        </OwnerCard>
 
       </div>
     </div>
