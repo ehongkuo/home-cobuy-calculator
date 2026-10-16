@@ -54,17 +54,31 @@ The app is a static site hosted on Cloudflare Workers. `app/wrangler.jsonc` tell
 
 ### One-time setup
 
-In the Cloudflare dashboard, go to **Workers & Pages → Create application → Import a repository**, connect GitHub (choose **Only select repositories**), pick this repo, and use:
+In the Cloudflare dashboard, go to **Workers & Pages → Create application → Import a repository**, connect GitHub (choose **Only select repositories**), pick this repo, and set the **Production** build settings:
 
 | Setting | Value |
 | --- | --- |
 | Project name | `home-cobuy-calculator` (must match `name` in `wrangler.jsonc`) |
-| Root directory | `app` |
+| Root directory | `/app` |
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy` |
-| Non-production branch deploy command | `npx wrangler versions upload` |
 
-The site is served at `https://home-cobuy-calculator.<your-subdomain>.workers.dev`. Under the Worker's **Settings → Domains & Routes**, make sure **Preview URLs** is enabled.
+The site is served at `https://home-cobuy-calculator.<your-subdomain>.workers.dev`.
+
+### Preview builds
+
+PR previews come from a second build trigger named **Preview builds**, created through the [Workers Builds API](https://developers.cloudflare.com/workers/ci-cd/builds/api-reference/). It doesn't appear on the dashboard's Builds page:
+
+| Setting | Value |
+| --- | --- |
+| Branches | all except `main` |
+| Root directory | `/app` |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler versions upload` |
+
+The dashboard's **Previews Base** builds (the `npx wrangler preview` beta) are turned off. Each branch got its own copy of those settings, and the copies didn't pick up later edits. If both are on, every PR gets a second, failing Cloudflare check.
+
+To inspect or change the trigger, call `GET`/`PATCH /accounts/<account_id>/builds/triggers` with a user API token that has **Workers CI: Edit**.
 
 ### How updates ship
 
