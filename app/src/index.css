@@ -2644,9 +2644,19 @@ button:focus:not(:focus-visible) {
     gap: 6px;
   }
 
-  /* Year sits on its own full-width row under the title */
-  .year-wheel {
-    order: 3;
-    flex-basis: 100%;
+  /* The year slider in the top bar stays a slider: give it a bigger thumb */
+  .assumption-range {
+    height: 8px;
+    margin: 10px 0;
+  }
+
+  .assumption-range::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  .assumption-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
   }
 }
