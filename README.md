@@ -50,32 +50,31 @@ To run this project locally on your machine:
 
 ## Deploying
 
-The app is a static site hosted on Cloudflare Pages. It has no backend: scenario inputs live in the URL hash (`#s=…`), which browsers never send to the server.
+The app is a static site hosted on Cloudflare Workers. `app/wrangler.jsonc` tells Cloudflare to serve the Vite build in `dist/`. No server code runs: scenario inputs live in the URL hash (`#s=…`), which browsers never send to the server.
 
 ### One-time setup
 
-In the Cloudflare dashboard, go to **Workers & Pages → Create → Pages → Connect to Git**, pick this repo, and use:
+In the Cloudflare dashboard, go to **Workers & Pages → Create application → Import a repository**, connect GitHub (choose **Only select repositories**), pick this repo, and use:
 
 | Setting | Value |
 | --- | --- |
-| Production branch | `main` |
-| Framework preset | None (or Vite) |
+| Project name | `home-cobuy-calculator` (must match `name` in `wrangler.jsonc`) |
 | Root directory | `app` |
 | Build command | `npm run build` |
-| Build output directory | `dist` |
+| Deploy command | `npx wrangler deploy` |
+| Non-production branch deploy command | `npx wrangler versions upload` |
+
+The site is served at `https://home-cobuy-calculator.<your-subdomain>.workers.dev`. Under the Worker's **Settings → Domains & Routes**, make sure **Preview URLs** is enabled.
 
 ### How updates ship
 
-- Every pull request gets its own preview URL, posted on the PR.
-- Merging to `main` deploys production at `<project>.pages.dev`.
-- To roll back, open the project's **Deployments** list and choose **Rollback** on an earlier build.
+- Every pull request gets a preview URL, linked from the PR's Cloudflare check.
+- Merging to `main` deploys production.
+- To roll back, open the Worker's **Deployments** tab and choose **Rollback** on an earlier version.
 
 ### Limiting who can open it
 
-The site is public by default. Anyone with a **Share** link also sees that scenario's numbers. To restrict the site to the owners, put Cloudflare Access (free for up to 50 users) in front of it:
-
-- **Production:** **Zero Trust → Access → Applications → Add an application → Self-hosted**, set the domain to `<project>.pages.dev`, and add a policy allowing the owners' emails.
-- **Previews:** in the Pages project, open **Settings → General** and enable the access policy for preview deployments.
+The site is public by default. Anyone with a **Share** link also sees that scenario's numbers. To restrict it to the owners, open the Worker's **Settings → Domains & Routes** and enable **Cloudflare Access** on the `workers.dev` route and on Preview URLs, then allow the owners' emails in the Access policy (free for up to 50 users).
 
 ### CI and branch protection
 
