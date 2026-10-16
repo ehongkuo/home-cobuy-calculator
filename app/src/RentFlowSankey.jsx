@@ -76,6 +76,8 @@ function layout(flow, width) {
   return { nodes: Object.values(nodes), links, compact, legend };
 }
 
+const colorOf = (node) => node.color ?? FLOW_COLORS[node.kind];
+
 const ribbon = ({ x1, y1, x2, y2, h }) => {
   const mid = (x2 - x1) * 0.5;
   return `M${x1},${y1} C${x1 + mid},${y1} ${x2 - mid},${y2} ${x2},${y2} L${x2},${y2 + h} C${x2 - mid},${y2 + h} ${x1 + mid},${y1 + h} ${x1},${y1 + h} Z`;
@@ -128,8 +130,8 @@ export default function RentFlowSankey({ flow }) {
           <defs>
             {links.map((l) => (
               <linearGradient key={l.id} id={`flow-grad-${l.id}`} gradientUnits="userSpaceOnUse" x1={l.x1} x2={l.x2} y1="0" y2="0">
-                <stop offset="0%" stopColor={FLOW_COLORS[byId[l.source].kind]} />
-                <stop offset="100%" stopColor={FLOW_COLORS[byId[l.target].kind]} />
+                <stop offset="0%" stopColor={colorOf(byId[l.source])} />
+                <stop offset="100%" stopColor={colorOf(byId[l.target])} />
               </linearGradient>
             ))}
           </defs>
@@ -149,7 +151,7 @@ export default function RentFlowSankey({ flow }) {
           ))}
 
           {nodes.map((n) => {
-            const color = FLOW_COLORS[n.kind];
+            const color = colorOf(n);
             const dim = hover && hover.type === "node" && hover.id !== n.id &&
               !links.some((l) => isActive(l) && (l.source === n.id || l.target === n.id));
             return (
@@ -208,7 +210,7 @@ export default function RentFlowSankey({ flow }) {
                 .filter((n) => n.column === column)
                 .map((n) => (
                   <li key={n.id}>
-                    <span className="sankey-swatch" style={{ background: FLOW_COLORS[n.kind] }} />
+                    <span className="sankey-swatch" style={{ background: colorOf(n) }} />
                     <span className="sankey-legend-name">{n.label}</span>
                     <span className="sankey-legend-amount">{formatCurrency(n.value)}</span>
                   </li>

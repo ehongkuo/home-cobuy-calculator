@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Home,
   DollarSign,
@@ -8,8 +8,8 @@ import {
   Scale,
   Clock,
   Sliders,
-  Users,
   User,
+  Users,
   Wrench,
   Percent,
   Activity,
@@ -28,11 +28,20 @@ import {
   buildAmortizationSchedule,
   calculateCashToClose,
   calculateCumulativeRentalTaxSavings,
+  calculateOwnerCashFlows,
   calculateMortgagePayment,
   calculateScheduleATaxSavings,
   TAX_ASSUMPTIONS,
   valueInYear,
 } from "./financialModel";
+import {
+  DEFAULT_INPUTS,
+  encodeInputs,
+  inputsFromHash,
+  normalizeInputs,
+} from "./scenario";
+import OwnersPanel from "./OwnersPanel";
+import ScenarioMenu from "./ScenarioMenu";
 
 const TAB_CONFIG = [
   { id: "cashflow", icon: DollarSign, label: "Cash Flow" },
@@ -41,6 +50,10 @@ const TAB_CONFIG = [
   { id: "longterm", icon: TrendingUp, label: "Long-Term" },
   { id: "opportunity", icon: Scale, label: "Buy vs Rent" },
 ];
+
+const loadInputs = () =>
+  inputsFromHash(typeof window === "undefined" ? "" : window.location.hash) ??
+  normalizeInputs(DEFAULT_INPUTS);
 
 function App() {
   const [activeTab, setActiveTab] = useState("cashflow");
@@ -52,48 +65,89 @@ function App() {
     mainRef.current?.scrollTo(0, 0);
   }, [activeTab]);
 
-  // Shared state
-  const [userRent, setUserRent] = useState(3200);
-  const [coOwnerRent, setCoOwnerRent] = useState(3000);
-  const [tenantRent, setTenantRent] = useState(6500);
-  const [includeTaxSavings, setIncludeTaxSavings] = useState(true);
-  const [selectedYear, setSelectedYear] = useState(1);
+  // Every input lives in one scenario object so it can be shared by URL
+  // and exported/imported as JSON.
+  const [inputs, setInputs] = useState(loadInputs);
+  const set = (key) => (value) =>
+    setInputs((prev) => ({
+      ...prev,
+      [key]: typeof value === "function" ? value(prev[key]) : value,
+    }));
+  const {
+    owners,
+    tenantRent,
+    includeTaxSavings,
+    isRental,
+    selectedYear,
+    purchasePrice,
+    interestRate,
+    baseHOA,
+    hoaInflation,
+    appreciation,
+    rentInflation,
+    moveOutYear,
+    operatingExpenseRate,
+    downPaymentPercent,
+    propertyTaxRate,
+    takeHome,
+    nonHousingExpenses,
+    stockMarketReturn,
+    equivalentRent,
+  } = inputs;
+  const setOwners = set("owners");
+  const setTenantRent = set("tenantRent");
+  const setIncludeTaxSavings = set("includeTaxSavings");
+  const setSelectedYear = set("selectedYear");
+  const setPurchasePrice = set("purchasePrice");
+  const setInterestRate = set("interestRate");
+  const setBaseHOA = set("baseHOA");
+  const setHoaInflation = set("hoaInflation");
+  const setAppreciation = set("appreciation");
+  const setRentInflation = set("rentInflation");
+  const setMoveOutYear = set("moveOutYear");
+  const setOperatingExpenseRate = set("operatingExpenseRate");
+  const setDownPaymentPercent = set("downPaymentPercent");
+  const setPropertyTaxRate = set("propertyTaxRate");
+  const setTakeHome = set("takeHome");
+  const setNonHousingExpenses = set("nonHousingExpenses");
+  const setStockMarketReturn = set("stockMarketReturn");
+  const setEquivalentRent = set("equivalentRent");
+  const loanTermYears = 30;
 
-  // Global Controls State
-  const [purchasePrice, setPurchasePrice] = useState(1050000);
-  const [interestRate, setInterestRate] = useState(6.5);
-  const [baseHOA, setBaseHOA] = useState(1500);
-  const [hoaInflation, setHoaInflation] = useState(4.0);
-  const [appreciation, setAppreciation] = useState(3.0);
-  const [rentInflation, setRentInflation] = useState(3.0);
-  const [moveOutYear, setMoveOutYear] = useState(5);
-  const [operatingExpenseRate, setOperatingExpenseRate] = useState(0.5);
-  const [downPaymentPercent, setDownPaymentPercent] = useState(20);
-  const [loanTermYears] = useState(30);
-  const [propertyTaxRate, setPropertyTaxRate] = useState(1.18);
+  // Keep the URL in sync so the current scenario is always shareable, and
+  // follow the hash when someone pastes a different shared link.
+  useEffect(() => {
+    const hash = `#s=${encodeInputs(inputs)}`;
+    if (window.location.hash !== hash) window.history.replaceState(null, "", hash);
+  }, [inputs]);
+  useEffect(() => {
+    const onHash = () => {
+      const next = inputsFromHash(window.location.hash);
+      if (next) setInputs(next);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
-  // Opportunity Cost tab state (lifted to App for top bar sliders)
-  const [takeHome, setTakeHome] = useState(6000);
-  const [nonHousingExpenses, setNonHousingExpenses] = useState(2000);
-  const [stockMarketReturn, setStockMarketReturn] = useState(7.0);
-  const [equivalentRent, setEquivalentRent] = useState(3300);
+  // "You" is the perspective for the tax views, Buy vs Rent and the top bar.
+  const you = owners.find((o) => o.isYou) ?? owners[0];
 
   // Owner-occupied vs rental view for Cash Flow and Taxes. Independent of
   // the year; Long-Term and Buy vs Rent follow the Move Out timeline instead.
-  const [isRental, setIsRental] = useState(false);
-  const toggleOccupancy = () => setIsRental((rental) => !rental);
+  const toggleOccupancy = () => set("isRental")((rental) => !rental);
 
   // Rental years counted toward cumulative tax savings: after move-out, or
   // from year 1 when viewing a rental year before the planned move-out.
   const rentalStartsAfterYear =
     isRental && selectedYear <= moveOutYear ? 0 : moveOutYear;
 
+  const ownerRentTotal = owners.reduce((sum, o) => sum + o.rent, 0);
   const totalRent = isRental
     ? valueInYear(tenantRent, rentInflation, selectedYear)
-    : userRent + coOwnerRent;
+    : ownerRentTotal;
 
   // 1. Property Calculations (Base values)
-  const cashToClose = calculateCashToClose({ purchasePrice, downPaymentPercent });
+  const cashToClose = calculateCashToClose({ purchasePrice, downPaymentPercent, owners });
   const loanAmount = purchasePrice - cashToClose.downPayment;
   const mortgage = calculateMortgagePayment(
     loanAmount,
@@ -138,18 +192,20 @@ function App() {
   const monthlyPrincipal = totalPrincipalForYear / 12;
 
   // --- Owner Occupied (Schedule A) ---
-  const scheduleA = calculateScheduleATaxSavings({
-    annualInterest: totalInterestForYear,
-    annualPropertyTax: propertyTaxAnnual,
-    loanAmount,
-  });
+  // Deductions follow each owner's share of the title and loan.
+  const scheduleAFor = (owner) =>
+    calculateScheduleATaxSavings({
+      annualInterest: totalInterestForYear,
+      annualPropertyTax: propertyTaxAnnual,
+      loanAmount,
+      ownerShare: owner.title / 100,
+    });
+  const scheduleA = scheduleAFor(you);
   const marginalRate = TAX_ASSUMPTIONS.marginalRate;
-  const userTaxShieldScheduleA = scheduleA.monthlyTaxSavings;
 
-  // --- Rental (LLC Partnership — 25% cash flow, 50% tax benefits, REPS active losses) ---
-  const llcCashFlowShare = 0.25;
-  const llcTaxShare = 0.50;
-  
+  // --- Rental (LLC partnership: cash flow by equity, tax items by title share, REPS active losses) ---
+  const llcTaxShare = you.title / 100;
+
   const buildingRatio = 0.8;
   const depreciationBasis = purchasePrice * buildingRatio;
   const annualDepreciation = depreciationBasis / 27.5;
@@ -210,38 +266,41 @@ function App() {
     marginalRate,
   ]);
 
-  // The actual applied tax shield (added to net cash flow)
-  // Owner: positive savings from Schedule A.
-  // Rental LLC: if loss → positive savings (reduces W-2 tax). If profit → negative cost.
-  const appliedTaxShield = includeTaxSavings
-    ? isRental
-      ? -monthlyRentalTaxCost // negative * negative = positive savings; or negative cost if profit
-      : userTaxShieldScheduleA
-    : 0;
+  // Monthly tax effect per owner, added to their net cash flow.
+  // Owner: Schedule A savings. Rental LLC: a loss saves tax, a profit costs tax.
+  const fullRentalNetIncome =
+    totalRent * 12 -
+    (totalInterestForYear +
+      propertyTaxAnnual +
+      currentHOAAnnual +
+      annualDepreciation +
+      totalOperatingExpenses);
+  const taxShieldFor = (owner) => {
+    if (!includeTaxSavings || owner.title <= 0) return 0;
+    return isRental
+      ? -(fullRentalNetIncome * (owner.title / 100) * marginalRate) / 12
+      : scheduleAFor(owner).monthlyTaxSavings;
+  };
 
-  // 4. Distributions
-  // Cash flow is permanently 50% investor, 25% you, 25% co-owner
-  const investorRentIncome = totalRent * 0.5;
-  const investorExpenses = isRental
-    ? (propertyCosts + totalOperatingExpenses / 12) * 0.5
-    : propertyCosts * 0.5;
-  const investorNet = investorRentIncome - investorExpenses;
-
-  const userRentIncome = totalRent * 0.25;
-  const userExpenses = isRental
-    ? (propertyCosts + totalOperatingExpenses / 12) * llcCashFlowShare
-    : propertyCosts * 0.25;
-  const userNet = isRental
-    ? userRentIncome - userExpenses + appliedTaxShield
-    : userRentIncome - userRent - userExpenses + appliedTaxShield;
-
-  const coOwnerRentIncome = totalRent * 0.25;
-  const coOwnerExpenses = isRental
-    ? (propertyCosts + totalOperatingExpenses / 12) * llcCashFlowShare
-    : propertyCosts * 0.25;
-  const coOwnerNet = isRental
-    ? coOwnerRentIncome - coOwnerExpenses + appliedTaxShield
-    : coOwnerRentIncome - coOwnerRent - coOwnerExpenses + appliedTaxShield;
+  // 4. Distributions: costs and rent income split by each owner's equity.
+  const ownerFlows = calculateOwnerCashFlows({
+    owners,
+    isRental,
+    totalRent,
+    costs: {
+      mortgage,
+      propertyTax,
+      hoa,
+      opex: totalOperatingExpenses / 12,
+    },
+    taxShieldFor,
+  });
+  const userNet = ownerFlows.find((o) => o.id === you.id).net;
+  const titleHolders = owners
+    .filter((o) => o.title > 0)
+    .map((o) => ({ ...o, scheduleA: scheduleAFor(o) }));
+  // Section 121: each owner on title who lived there gets their own exclusion.
+  const exclusionOwners = owners.filter((o) => o.title > 0 && o.rent > 0).length;
 
   return (
     <div className="app-layout">
@@ -310,8 +369,13 @@ function App() {
               />
               Tax Savings
             </label>
+            <ScenarioMenu
+              inputs={inputs}
+              onLoad={(next) => setInputs(normalizeInputs(next))}
+              onReset={() => setInputs(normalizeInputs(DEFAULT_INPUTS))}
+            />
             <span className={`topbar-badge net-badge ${userNet >= 0 ? "badge-green" : "badge-red"}`}>
-              <span className="net-label-long">Your net:</span>
+              <span className="net-label-long">{you.name === "You" ? "Your" : `${you.name}'s`} net:</span>
               <span className="net-label-short">Net</span> {formatCurrency(userNet)}/mo
             </span>
           </div>
@@ -328,10 +392,10 @@ function App() {
         </div>
 
         <div id="global-assumptions" className="global-assumptions">
-          <AssumptionSlider icon={Home} label="Price" value={purchasePrice} setValue={setPurchasePrice} min={900000} max={1500000} step={10000} />
+          <AssumptionSlider icon={Home} label="Price" value={purchasePrice} setValue={setPurchasePrice} min={100000} max={5000000} step={5000} />
           <AssumptionSlider icon={PiggyBank} label="Down" value={downPaymentPercent} setValue={setDownPaymentPercent} min={10} max={50} step={5} format="percentage" />
           <AssumptionSlider icon={Percent} label="Rate" value={interestRate} setValue={setInterestRate} min={4} max={8} step={0.125} format="percentage" />
-          <AssumptionSlider icon={Building} label="HOA" value={baseHOA} setValue={setBaseHOA} min={500} max={2500} step={10} format="currency/mo" />
+          <AssumptionSlider icon={Building} label="HOA" value={baseHOA} setValue={setBaseHOA} min={0} max={3000} step={10} format="currency/mo" />
           <AssumptionSlider icon={Landmark} label="Prop. Tax" value={propertyTaxRate} setValue={setPropertyTaxRate} min={0.5} max={2} step={0.01} format="percentage" />
           <AssumptionSlider icon={Clock} label="Move Out" value={moveOutYear} setValue={setMoveOutYear} min={2} max={10} step={1} format="years" />
         </div>
@@ -348,34 +412,33 @@ function App() {
         </h2>
         {activeTab === "cashflow" && (
           <>
-          <AssumptionPanel title="Rent" note={isRental ? "Rental view: tenant rent applies" : "Owner-occupied view: your and your co-owner's rent apply"}>
-              <AssumptionSlider icon={User} label="Your Rent" hint="owner view" value={userRent} setValue={setUserRent} min={2500} max={4000} step={50} format="currency/mo" />
-              <AssumptionSlider icon={User} label="Co-owner's Rent" hint="owner view" value={coOwnerRent} setValue={setCoOwnerRent} min={2500} max={4000} step={50} format="currency/mo" />
-              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental view" value={tenantRent} setValue={setTenantRent} min={5500} max={9000} step={100} format="currency/mo" />
+          <OwnersPanel owners={owners} setOwners={setOwners} />
+          <AssumptionPanel title="Rent" note={isRental ? "Rental view: tenant rent applies" : "Owner-occupied view: residents' rent applies"}>
+              {owners
+                .filter((o) => o.rent > 0)
+                .map((o) => (
+                  <AssumptionSlider
+                    key={o.id}
+                    icon={User}
+                    label={o.isYou && o.name === "You" ? "Your Rent" : `${o.name}'s Rent`}
+                    hint="owner view"
+                    value={o.rent}
+                    setValue={(rent) => setOwners((list) => list.map((x) => (x.id === o.id ? { ...x, rent } : x)))}
+                    min={500}
+                    max={10000}
+                    step={50}
+                    format="currency/mo"
+                  />
+                ))}
+              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental view" value={tenantRent} setValue={setTenantRent} min={1000} max={20000} step={100} format="currency/mo" />
               <AssumptionSlider icon={Wrench} label="Operating Expenses" hint="% of price / yr" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
               <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
           </AssumptionPanel>
           <CashFlowTab
             isRental={isRental}
-            userRent={userRent}
-            setUserRent={setUserRent}
-            coOwnerRent={coOwnerRent}
-            setCoOwnerRent={setCoOwnerRent}
-            tenantRent={tenantRent}
-            setTenantRent={setTenantRent}
+            owners={ownerFlows}
             includeTaxSavings={includeTaxSavings}
             totalRent={totalRent}
-            investorExpenses={investorExpenses}
-            investorRentIncome={investorRentIncome}
-            investorNet={investorNet}
-            userExpenses={userExpenses}
-            userRentIncome={userRentIncome}
-            userNet={userNet}
-            userTaxShield={appliedTaxShield}
-            coOwnerExpenses={coOwnerExpenses}
-            coOwnerRentIncome={coOwnerRentIncome}
-            coOwnerNet={coOwnerNet}
-            propertyCosts={propertyCosts}
             mortgage={mortgage}
             monthlyInterest={monthlyInterest}
             monthlyPrincipal={monthlyPrincipal}
@@ -390,6 +453,7 @@ function App() {
 
         {activeTab === "loan" && (
           <LoanTab
+            owners={owners}
             purchasePrice={purchasePrice}
             downPaymentPercent={downPaymentPercent}
             cashToClose={cashToClose}
@@ -408,7 +472,7 @@ function App() {
         {activeTab === "taxes" && (
           <>
           <AssumptionPanel title="Rental Inputs" note="Used in the rental view; tax brackets live in TAX_ASSUMPTIONS">
-              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental view" value={tenantRent} setValue={setTenantRent} min={5500} max={9000} step={100} format="currency/mo" />
+              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental view" value={tenantRent} setValue={setTenantRent} min={1000} max={20000} step={100} format="currency/mo" />
               <AssumptionSlider icon={Wrench} label="Operating Expenses" hint="% of price / yr" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
               <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
           </AssumptionPanel>
@@ -437,6 +501,8 @@ function App() {
             monthlyRentalTaxCost={monthlyRentalTaxCost}
             cumulativeTaxSavings={cumulativeTaxSavings}
             llcShare={llcTaxShare}
+            titleHolders={titleHolders}
+            youId={you.id}
             userShareOfRentIncome={userShareOfRentIncomeTax}
           />
           </>
@@ -457,6 +523,7 @@ function App() {
             hoaInflation={hoaInflation}
             appreciation={appreciation}
             moveOutYear={moveOutYear}
+            exclusionOwners={exclusionOwners}
           />
           </>
         )}
@@ -466,7 +533,7 @@ function App() {
           <AssumptionPanel title="Your Budget & Markets">
               <AssumptionSlider icon={DollarSign} label="Take-Home Pay" value={takeHome} setValue={setTakeHome} min={2000} max={15000} step={100} format="currency/mo" />
               <AssumptionSlider icon={DollarSign} label="Non-Housing Expenses" value={nonHousingExpenses} setValue={setNonHousingExpenses} min={500} max={8000} step={100} format="currency/mo" />
-              <AssumptionSlider icon={Home} label="Equivalent Rent" hint="if you rented instead" value={equivalentRent} setValue={setEquivalentRent} min={500} max={5000} step={50} format="currency/mo" />
+              <AssumptionSlider icon={Home} label="Equivalent Rent" hint="if you rented instead" value={equivalentRent} setValue={setEquivalentRent} min={500} max={10000} step={50} format="currency/mo" />
               <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
               <AssumptionSlider icon={TrendingUp} label="S&P 500 Return" hint="per year" value={stockMarketReturn} setValue={setStockMarketReturn} min={0} max={15} step={0.5} format="percentage" />
               <AssumptionSlider icon={TrendingUp} label="Appreciation" hint="per year" value={appreciation} setValue={setAppreciation} min={0} max={10} step={0.5} format="percentage" />
@@ -479,8 +546,10 @@ function App() {
             basePropertyTaxAnnual={basePropertyTaxAnnual}
             hoaInflation={hoaInflation}
             appreciation={appreciation}
-            userRent={userRent}
-            coOwnerRent={coOwnerRent}
+            youShare={you.equity / 100}
+            youTitleShare={you.title / 100}
+            youRent={you.rent}
+            ownerRentTotal={ownerRentTotal}
             tenantRent={tenantRent}
             operatingExpenseRate={operatingExpenseRate}
             moveOutYear={moveOutYear}

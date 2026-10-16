@@ -43,17 +43,31 @@ export function WheelPicker({ values, value, onChange, format, label, onPreview 
   const frame = useRef(null);
   const index = useMemo(() => nearestIndex(values, value), [values, value]);
 
-  // Fade and tilt each row by its distance from the center band.
+  // Fade and tilt the rows near the center band. Only those are touched, so
+  // long lists (a price range can have ~1,000 steps) stay cheap to scroll.
+  const painted = useRef(new Set());
   const paint = () => {
     const list = listRef.current;
     if (!list) return;
     const center = list.scrollTop / ITEM_HEIGHT;
-    for (const el of list.children) {
-      const offset = Number(el.dataset.index) - center;
+    const first = Math.max(0, Math.floor(center) - 3);
+    const last = Math.min(values.length - 1, Math.ceil(center) + 3);
+    const next = new Set();
+    for (let i = first; i <= last; i++) {
+      const el = list.children[i];
+      const offset = i - center;
       const distance = Math.min(Math.abs(offset), 3);
       el.style.opacity = String(1 - distance * 0.28);
       el.style.transform = `rotateX(${Math.max(-60, Math.min(60, -offset * 20))}deg)`;
+      next.add(i);
     }
+    for (const i of painted.current) {
+      if (!next.has(i) && list.children[i]) {
+        list.children[i].style.opacity = "";
+        list.children[i].style.transform = "";
+      }
+    }
+    painted.current = next;
     onPreview?.(values[Math.max(0, Math.min(values.length - 1, Math.round(center)))]);
   };
 

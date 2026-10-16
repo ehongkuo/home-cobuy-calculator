@@ -5,11 +5,8 @@ export const formatCurrency = (value) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-// Sankey colors, shared by the rent flow chart and its summary legend.
+// Sankey colors for non-owner nodes; owners carry their own color.
 export const FLOW_COLORS = {
-  user: "#818cf8",
-  coOwner: "#c084fc",
-  investor: "#2dd4bf",
   tenant: "#38bdf8",
   pot: "#6366f1",
   topUp: "#f472b6",

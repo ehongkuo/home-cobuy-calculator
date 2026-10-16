@@ -3,7 +3,6 @@ import MathTooltip from "./MathTooltip";
 import { formatCurrency } from "./utils";
 import {
   BUYER_CLOSING_COST_RATE,
-  EQUITY_SPLIT,
   calculateNetWorthComparison,
   calculateScheduleATaxSavings,
   TAX_ASSUMPTIONS,
@@ -11,7 +10,6 @@ import {
 } from "./financialModel";
 
 const buyerClosingCostsPercent = BUYER_CLOSING_COST_RATE;
-const userEquityShare = EQUITY_SPLIT.user;
 
 function OpportunityCostTab({
   purchasePrice,
@@ -21,8 +19,10 @@ function OpportunityCostTab({
   basePropertyTaxAnnual, // annual
   hoaInflation, // percentage
   appreciation, // percentage
-  userRent, // user's monthly rent contribution during owner-occupied
-  coOwnerRent, // co-owner's rent during owner-occupied
+  youShare, // your equity share of costs, rent and proceeds
+  youTitleShare, // your share of the title, for tax deductions
+  youRent, // your monthly rent contribution during owner-occupied
+  ownerRentTotal, // all residents' rent during owner-occupied
   tenantRent, // total monthly tenant rent when rented out
   operatingExpenseRate,
   moveOutYear,
@@ -41,9 +41,7 @@ function OpportunityCostTab({
   const downPaymentTotal = purchasePrice - loanAmount;
   const sellerClosingCostsPercent = 0.06;
 
-  const userCashFlowShareOwner = 0.25;
-  const userCashFlowShareRental = 0.25;
-  const userTaxShareRental = 0.50;
+  const sharePct = `${Number((youShare * 100).toFixed(2))}%`;
 
   const marginalRate = TAX_ASSUMPTIONS.marginalRate;
   const buildingRatio = 0.8;
@@ -51,9 +49,9 @@ function OpportunityCostTab({
   const annualDepreciation = depreciationBasis / 27.5;
 
   const data = useMemo(() => {
-    const initialDownPaymentUser = downPaymentTotal * userEquityShare;
+    const initialDownPaymentUser = downPaymentTotal * youShare;
     const initialClosingCostsUser =
-      purchasePrice * buyerClosingCostsPercent * userEquityShare;
+      purchasePrice * buyerClosingCostsPercent * youShare;
     const totalInitialSunkUser =
       initialDownPaymentUser + initialClosingCostsUser;
 
@@ -114,18 +112,18 @@ function OpportunityCostTab({
       let monthRentalTaxImpact = 0;
 
       if (!isRental) {
-        monthMortgageShare = mortgage * userCashFlowShareOwner;
-        monthHoaShare = currentHOA * userCashFlowShareOwner;
-        monthPropTaxShare = currentTaxMonthly * userCashFlowShareOwner;
+        monthMortgageShare = mortgage * youShare;
+        monthHoaShare = currentHOA * youShare;
+        monthPropTaxShare = currentTaxMonthly * youShare;
 
-        const totalRentPot = userRent + coOwnerRent;
-        monthRentIncome = totalRentPot * 0.25;
+        monthRentIncome = ownerRentTotal * youShare;
 
         monthTaxShield = includeTaxSavings
           ? calculateScheduleATaxSavings({
               annualInterest: totalInterestForYear,
               annualPropertyTax: currentTaxAnnual,
               loanAmount,
+              ownerShare: youTitleShare,
             }).monthlyTaxSavings
           : 0;
 
@@ -133,7 +131,7 @@ function OpportunityCostTab({
           monthMortgageShare +
           monthHoaShare +
           monthPropTaxShare +
-          userRent -
+          youRent -
           monthRentIncome -
           monthTaxShield;
       } else {
@@ -145,20 +143,20 @@ function OpportunityCostTab({
         monthTenantRent = inflatedTenantRent;
         const currentOpExAnnual =
           purchasePrice * (operatingExpenseRate / 100);
-        monthOpExShare = (currentOpExAnnual / 12) * userCashFlowShareRental;
+        monthOpExShare = (currentOpExAnnual / 12) * youShare;
 
-        monthMortgageShare = mortgage * userCashFlowShareRental;
-        monthHoaShare = currentHOA * userCashFlowShareRental;
-        monthPropTaxShare = currentTaxMonthly * userCashFlowShareRental;
-        monthRentIncome = inflatedTenantRent * userCashFlowShareRental;
+        monthMortgageShare = mortgage * youShare;
+        monthHoaShare = currentHOA * youShare;
+        monthPropTaxShare = currentTaxMonthly * youShare;
+        monthRentIncome = inflatedTenantRent * youShare;
 
-        const rentalInterest = totalInterestForYear * userTaxShareRental;
-        const rentalPropertyTax = currentTaxAnnual * userTaxShareRental;
-        const rentalHOA = currentHOA * 12 * userTaxShareRental;
+        const rentalInterest = totalInterestForYear * youTitleShare;
+        const rentalPropertyTax = currentTaxAnnual * youTitleShare;
+        const rentalHOA = currentHOA * 12 * youTitleShare;
         const userShareOfDepreciation =
-          annualDepreciation * userTaxShareRental;
+          annualDepreciation * youTitleShare;
         const userShareOfOperatingExpenses =
-          currentOpExAnnual * userTaxShareRental;
+          currentOpExAnnual * youTitleShare;
         const totalRentalDeductions =
           rentalInterest +
           rentalPropertyTax +
@@ -167,7 +165,7 @@ function OpportunityCostTab({
           userShareOfOperatingExpenses;
 
         const annualRentalIncomeTax =
-          inflatedTenantRent * 12 * userTaxShareRental;
+          inflatedTenantRent * 12 * youTitleShare;
         const netRentalIncomeTax =
           annualRentalIncomeTax - totalRentalDeductions;
         monthRentalTaxImpact = includeTaxSavings
@@ -228,9 +226,9 @@ function OpportunityCostTab({
     const sellerClosingCostsTotal =
       finalPropertyVal * sellerClosingCostsPercent;
 
-    const userHomeEquity = grossEquityTotal * userEquityShare;
+    const userHomeEquity = grossEquityTotal * youShare;
     const userNetProceeds =
-      (grossEquityTotal - sellerClosingCostsTotal) * userEquityShare;
+      (grossEquityTotal - sellerClosingCostsTotal) * youShare;
 
     const {
       buyLiquidNetWorth,
@@ -279,9 +277,9 @@ function OpportunityCostTab({
       rentCumulativeReturns,
       userHomeEquity,
       userNetProceeds,
-      sellerClosingCostsUser: sellerClosingCostsTotal * userEquityShare,
-      currentHomeValueUser: finalPropertyVal * userEquityShare,
-      remainingLoanUser: remainingLoanTotal * userEquityShare,
+      sellerClosingCostsUser: sellerClosingCostsTotal * youShare,
+      currentHomeValueUser: finalPropertyVal * youShare,
+      remainingLoanUser: remainingLoanTotal * youShare,
       buyLiquidNetWorth,
       rentNetWorth,
       pathAWins,
@@ -295,8 +293,10 @@ function OpportunityCostTab({
     basePropertyTaxAnnual,
     hoaInflation,
     appreciation,
-    userRent,
-    coOwnerRent,
+    youShare,
+    youTitleShare,
+    youRent,
+    ownerRentTotal,
     tenantRent,
     operatingExpenseRate,
     moveOutYear,
@@ -435,36 +435,36 @@ function OpportunityCostTab({
               </div>
 
               <Line
-                label="Mortgage (25% share)"
+                label={`Mortgage (${sharePct} share)`}
                 amount={-data.finalMortgageShare}
-                tooltip={`Total mortgage: ${formatCurrency(mortgage)}/mo\nYour 25%: ${formatCurrency(data.finalMortgageShare)}`}
+                tooltip={`Total mortgage: ${formatCurrency(mortgage)}/mo\nYour ${sharePct}: ${formatCurrency(data.finalMortgageShare)}`}
               />
               <Line
-                label="HOA (25% share)"
+                label={`HOA (${sharePct} share)`}
                 amount={-data.finalHoaShare}
                 tooltip={`HOA inflates ${hoaInflation}%/yr\nYear ${selectedYear}: ${formatCurrency(data.finalHoaShare)}`}
               />
               <Line
-                label="Property Tax (25% share)"
+                label={`Property Tax (${sharePct} share)`}
                 amount={-data.finalPropTaxShare}
                 tooltip={`Prop 13: inflates 2%/yr\nYear ${selectedYear}: ${formatCurrency(data.finalPropTaxShare)}`}
               />
               {data.finalIsRental && data.finalOpExShare > 0 && (
                 <Line
-                  label="Operating Expenses (25%)"
+                  label={`Operating Expenses (${sharePct})`}
                   amount={-data.finalOpExShare}
                 />
               )}
               {!data.finalIsRental && (
-                <Line label="Your Rent Payment" amount={-userRent} />
+                <Line label="Your Rent Payment" amount={-youRent} />
               )}
               <Line
-                label={data.finalIsRental ? "Tenant Income (25%)" : "Rent Pot Back (25%)"}
+                label={data.finalIsRental ? `Tenant Income (${sharePct})` : `Rent Pot Back (${sharePct})`}
                 amount={data.finalRentIncome}
                 tooltip={
                   data.finalIsRental
-                    ? `Tenant pays ${formatCurrency(data.finalTenantRent)}/mo\nYour 25%: ${formatCurrency(data.finalRentIncome)}`
-                    : `Rent pot: ${formatCurrency(userRent + coOwnerRent)}/mo\nYour 25% back: ${formatCurrency(data.finalRentIncome)}`
+                    ? `Tenant pays ${formatCurrency(data.finalTenantRent)}/mo\nYour ${sharePct}: ${formatCurrency(data.finalRentIncome)}`
+                    : `Rent pot: ${formatCurrency(ownerRentTotal)}/mo\nYour ${sharePct} back: ${formatCurrency(data.finalRentIncome)}`
                 }
               />
               {!data.finalIsRental && data.finalTaxShield > 0 && (
@@ -503,7 +503,7 @@ function OpportunityCostTab({
               <Line
                 label="Home Equity (net of 6% sale)"
                 amount={data.userNetProceeds}
-                tooltip={`Home Value (25%): ${formatCurrency(data.currentHomeValueUser)}\n- Loan (25%): ${formatCurrency(data.remainingLoanUser)}\n- Closing (6%): ${formatCurrency(data.sellerClosingCostsUser)}\n= ${formatCurrency(data.userNetProceeds)}`}
+                tooltip={`Home Value (${sharePct}): ${formatCurrency(data.currentHomeValueUser)}\n- Loan (${sharePct}): ${formatCurrency(data.remainingLoanUser)}\n- Closing (6%): ${formatCurrency(data.sellerClosingCostsUser)}\n= ${formatCurrency(data.userNetProceeds)}`}
               />
               <div className="opp-cf-divider" />
               <div className="opp-cf-line">

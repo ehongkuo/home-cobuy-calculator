@@ -57,6 +57,8 @@ function TaxTab({
   monthlyRentalTaxCost,
   cumulativeTaxSavings,
   llcShare,
+  titleHolders = [],
+  youId,
   userShareOfRentIncome,
 }) {
   if (isRental) {
@@ -83,9 +85,11 @@ function TaxTab({
           </div>
           <div className="card-body">
             <p style={{ color: "#e2e8f0", marginBottom: "16px" }}>
-              This scenario models <strong>2 equal LLC members ({(llcShare * 100).toFixed(0)}% each)</strong>:
-              you and your co-owner. It assigns each member half of the reported
-              rental income and deductions.
+              This scenario models <strong>{titleHolders.length} LLC{" "}
+              {titleHolders.length === 1 ? "member" : "members"}</strong>: the owners
+              on title. Each member reports their title share of the rental
+              income and deductions; the numbers below are your{" "}
+              {(llcShare * 100).toFixed(0)}%.
             </p>
             <p style={{ color: "#fbbf24", marginBottom: "16px" }}>
               <strong>Tax assumption:</strong> The projected W-2 offset only applies
@@ -95,28 +99,20 @@ function TaxTab({
               with a tax professional before relying on this scenario.
             </p>
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              <div
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  background: "rgba(96, 165, 250, 0.15)",
-                  border: "1px solid rgba(96, 165, 250, 0.3)",
-                  fontSize: "0.9rem",
-                }}
-              >
-                👤 You — 50% Member
-              </div>
-              <div
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  background: "rgba(96, 165, 250, 0.15)",
-                  border: "1px solid rgba(96, 165, 250, 0.3)",
-                  fontSize: "0.9rem",
-                }}
-              >
-                👤 Co-owner — 50% Member
-              </div>
+              {titleHolders.map((o) => (
+                <div
+                  key={o.id}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    background: "rgba(96, 165, 250, 0.15)",
+                    border: `1px solid ${o.id === youId ? "rgba(129, 140, 248, 0.7)" : "rgba(96, 165, 250, 0.3)"}`,
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  👤 {o.name} — {Number(o.title.toFixed(2))}% Member
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -182,8 +178,8 @@ function TaxTab({
                 </div>
                 <div className="tax-item-note">
                   <strong>Phantom deduction!</strong>{" "}
-                  {formatCurrency(purchasePrice)} × 80% building ÷ 27.5 years ÷
-                  2 members = {formatCurrency(userShareOfDepreciation)}/yr.
+                  {formatCurrency(purchasePrice)} × 80% building ÷ 27.5 years ×
+                  your {(llcShare * 100).toFixed(0)}% = {formatCurrency(userShareOfDepreciation)}/yr.
                 </div>
               </div>
             </div>
@@ -308,8 +304,8 @@ function TaxTab({
               </div>
               <div className="row">
                 <span>
-                  Depreciation ({formatCurrency(purchasePrice)} × 80% ÷ 27.5 ÷
-                  2):
+                  Depreciation ({formatCurrency(purchasePrice)} × 80% ÷ 27.5 ×{" "}
+                  {(llcShare * 100).toFixed(0)}%):
                 </span>{" "}
                 <span>-{formatCurrency(userShareOfDepreciation)}</span>
               </div>
@@ -720,88 +716,50 @@ function TaxTab({
       {/* STEP 2 */}
       <div className="card" style={{ marginBottom: "24px" }}>
         <div className="card-header" style={{ fontSize: "1.3rem" }}>
-          Step 2: Since we split the mortgage 50/50, we each get half
+          Step 2: Each owner on title deducts their share
         </div>
         <div className="card-body">
           <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
-            The IRS only lets you deduct YOUR share of what you pay. Since the
-            mortgage is in both co-owners' names equally:
+            The IRS only lets you deduct YOUR share of what you pay. The
+            mortgage and deed are split by title share:
           </p>
           <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
-            <div
-              style={{
-                flex: 1,
-                minWidth: "250px",
-                background: "rgba(96, 165, 250, 0.1)",
-                border: "1px solid rgba(96, 165, 250, 0.3)",
-                borderRadius: "12px",
-                padding: "20px",
-              }}
-            >
-              <div
-                style={{
-                  color: "#60a5fa",
-                  fontWeight: "bold",
-                  marginBottom: "12px",
-                  fontSize: "1.1rem",
-                }}
-              >
-                Your 50% Share (Year {selectedYear})
-              </div>
-              <div className="row">
-                <span>Mortgage Interest:</span>{" "}
-                <span>{formatCurrency(userShareOfInterest)} / yr</span>
-              </div>
-              <div className="row">
-                <span>Property Tax:</span>{" "}
-                <span>{formatCurrency(userShareOfPropertyTax)} / yr</span>
-              </div>
-              <hr style={{ opacity: 0.2 }} />
-              <div className="row total">
-                <span>Your Deductible Total:</span>{" "}
-                <span style={{ color: "#4ade80" }}>
-                  {formatCurrency(deductibleInterest + deductiblePropertyTax)} /
-                  yr
-                </span>
-              </div>
-            </div>
-            <div
-              style={{
-                flex: 1,
-                minWidth: "250px",
-                background: "rgba(168, 85, 247, 0.1)",
-                border: "1px solid rgba(168, 85, 247, 0.3)",
-                borderRadius: "12px",
-                padding: "20px",
-              }}
-            >
-              <div
-                style={{
-                  color: "#a855f7",
-                  fontWeight: "bold",
-                  marginBottom: "12px",
-                  fontSize: "1.1rem",
-                }}
-              >
-                Co-owner's 50% Share (Year {selectedYear})
-              </div>
-              <div className="row">
-                <span>Mortgage Interest:</span>{" "}
-                <span>{formatCurrency(userShareOfInterest)} / yr</span>
-              </div>
-              <div className="row">
-                <span>Property Tax:</span>{" "}
-                <span>{formatCurrency(userShareOfPropertyTax)} / yr</span>
-              </div>
-              <hr style={{ opacity: 0.2 }} />
-              <div className="row total">
-                <span>Their Deductible Total:</span>{" "}
-                <span style={{ color: "#4ade80" }}>
-                  {formatCurrency(deductibleInterest + deductiblePropertyTax)} /
-                  yr
-                </span>
-              </div>
-            </div>
+            {titleHolders.map((o) => {
+              const mine = o.id === youId;
+              const accent = mine ? "#60a5fa" : "#a855f7";
+              return (
+                <div
+                  key={o.id}
+                  style={{
+                    flex: 1,
+                    minWidth: "250px",
+                    background: mine ? "rgba(96, 165, 250, 0.1)" : "rgba(168, 85, 247, 0.1)",
+                    border: `1px solid ${mine ? "rgba(96, 165, 250, 0.3)" : "rgba(168, 85, 247, 0.3)"}`,
+                    borderRadius: "12px",
+                    padding: "20px",
+                  }}
+                >
+                  <div style={{ color: accent, fontWeight: "bold", marginBottom: "12px", fontSize: "1.1rem" }}>
+                    {o.name}&apos;s {Number(o.title.toFixed(2))}% Share (Year {selectedYear})
+                  </div>
+                  <div className="row">
+                    <span>Mortgage Interest:</span>{" "}
+                    <span>{formatCurrency(o.scheduleA.shareOfInterest)} / yr</span>
+                  </div>
+                  <div className="row">
+                    <span>Property Tax:</span>{" "}
+                    <span>{formatCurrency(o.scheduleA.shareOfPropertyTax)} / yr</span>
+                  </div>
+                  <hr style={{ opacity: 0.2 }} />
+                  <div className="row total">
+                    <span>Deductible Total:</span>{" "}
+                    <span style={{ color: "#4ade80" }}>
+                      {formatCurrency(o.scheduleA.deductibleInterest + o.scheduleA.deductiblePropertyTax)} / yr
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1001,7 +959,7 @@ function TaxTab({
                 marginBottom: 0,
               }}
             >
-              This is per person. Both co-owners get this amount individually.
+              This is per person. Each owner on title gets their own amount.
             </p>
           </div>
         </div>

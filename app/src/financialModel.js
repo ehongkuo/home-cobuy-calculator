@@ -165,56 +165,78 @@ export function calculateScheduleATaxSavings({
   };
 }
 
-// Upfront cash split by equity: investor 50%, you 25%, co-owner 25%.
+// Upfront cash split by each owner's equity percentage.
 export const BUYER_CLOSING_COST_RATE = 0.02;
-export const EQUITY_SPLIT = { investor: 0.5, user: 0.25, coOwner: 0.25 };
 
 export function calculateCashToClose({
   purchasePrice,
   downPaymentPercent,
+  owners,
   closingCostRate = BUYER_CLOSING_COST_RATE,
-  split = EQUITY_SPLIT,
 }) {
   const downPayment = purchasePrice * (downPaymentPercent / 100);
   const closingCosts = purchasePrice * closingCostRate;
   const total = downPayment + closingCosts;
   const byPerson = Object.fromEntries(
-    Object.entries(split).map(([person, share]) => [
-      person,
-      {
-        share,
-        downPayment: downPayment * share,
-        closingCosts: closingCosts * share,
-        total: total * share,
-      },
-    ]),
+    owners.map((o) => {
+      const share = o.equity / 100;
+      return [
+        o.id,
+        {
+          share,
+          downPayment: downPayment * share,
+          closingCosts: closingCosts * share,
+          total: total * share,
+        },
+      ];
+    }),
   );
 
   return { downPayment, closingCosts, total, byPerson };
 }
 
+// Monthly cash flow per owner. Costs and rent income split by equity; residents
+// also pay their rent in owner mode; taxShieldFor(owner) adds monthly savings.
+export function calculateOwnerCashFlows({
+  owners,
+  isRental,
+  totalRent,
+  costs,
+  taxShieldFor = () => 0,
+}) {
+  const opex = isRental ? costs.opex ?? 0 : 0;
+  return owners.map((owner) => {
+    const share = owner.equity / 100;
+    const split = {
+      mortgage: costs.mortgage * share,
+      propertyTax: costs.propertyTax * share,
+      hoa: costs.hoa * share,
+      opex: opex * share,
+    };
+    const expenses = split.mortgage + split.propertyTax + split.hoa + split.opex;
+    const rentIncome = totalRent * share;
+    const rentPaid = isRental ? 0 : owner.rent;
+    const taxShield = taxShieldFor(owner);
+    return {
+      ...owner,
+      share,
+      split,
+      expenses,
+      rentIncome,
+      rentPaid,
+      taxShield,
+      net: rentIncome - expenses - rentPaid + taxShield,
+    };
+  });
+}
+
 // Monthly rent flow for the Sankey: who pays in, the shared pots, and where
 // the money goes. Rent covers costs first; any gap is topped up by the owners
 // in equity proportion, and any surplus is distributed the same way.
-export function buildRentFlow({
-  isRental,
-  userRent,
-  coOwnerRent,
-  totalRent,
-  costs,
-  split = EQUITY_SPLIT,
-}) {
-  const people = {
-    user: { label: "You", share: split.user },
-    coOwner: { label: "Co-owner", share: split.coOwner },
-    investor: { label: "Investor", share: split.investor },
-  };
+export function buildRentFlow({ isRental, owners, totalRent, costs }) {
   const rentIn = isRental
-    ? [{ person: "tenant", value: totalRent }]
-    : [
-        { person: "user", value: userRent },
-        { person: "coOwner", value: coOwnerRent },
-      ];
+    ? [{ id: "tenant", value: totalRent }]
+    : owners.filter((o) => o.rent > 0).map((o) => ({ id: o.id, value: o.rent }));
   const rent = rentIn.reduce((s, r) => s + r.value, 0);
   const costRows = [
     { id: "interest", label: "Mortgage interest", value: costs.interest },
@@ -226,27 +248,29 @@ export function buildRentFlow({
   const totalCosts = costRows.reduce((s, c) => s + c.value, 0);
   const topUp = Math.max(0, totalCosts - rent);
   const surplus = Math.max(0, rent - totalCosts);
-  const order = isRental
-    ? ["tenant", "investor", "user", "coOwner"]
-    : ["user", "coOwner", "investor"];
+  // Rent payers first so their ribbons into the rent pot stay on top.
+  const payers = isRental
+    ? [{ id: "tenant", name: "Tenant", equity: 0, kind: "tenant" }, ...owners]
+    : [...owners.filter((o) => o.rent > 0), ...owners.filter((o) => !(o.rent > 0))];
 
   const nodes = [];
   const links = [];
-  for (const person of order) {
-    const rentPaid = rentIn.find((r) => r.person === person)?.value ?? 0;
-    const topUpPaid = topUp * (people[person]?.share ?? 0);
+  for (const payer of payers) {
+    const rentPaid = rentIn.find((r) => r.id === payer.id)?.value ?? 0;
+    const topUpPaid = topUp * (payer.equity / 100);
     if (rentPaid + topUpPaid <= 0.005) continue;
     nodes.push({
-      id: `in-${person}`,
-      kind: person,
-      label: people[person]?.label ?? "Tenant",
+      id: `in-${payer.id}`,
+      kind: payer.kind ?? "owner",
+      color: payer.color,
+      label: payer.name,
       column: 0,
       value: rentPaid + topUpPaid,
     });
     if (rentPaid > 0.005)
-      links.push({ source: `in-${person}`, target: "pot", value: rentPaid });
+      links.push({ source: `in-${payer.id}`, target: "pot", value: rentPaid });
     if (topUpPaid > 0.005)
-      links.push({ source: `in-${person}`, target: "topUp", value: topUpPaid });
+      links.push({ source: `in-${payer.id}`, target: "topUp", value: topUpPaid });
   }
   nodes.push({ id: "pot", kind: "pot", label: "Rent pot", column: 1, value: rent });
   if (topUp > 0.005)
@@ -254,13 +278,15 @@ export function buildRentFlow({
 
   const uses = costRows.map((c) => ({ ...c, kind: c.id }));
   if (surplus > 0.005)
-    for (const person of ["investor", "user", "coOwner"])
-      uses.push({
-        id: `out-${person}`,
-        kind: person,
-        label: `${people[person].label} (${Math.round(people[person].share * 100)}%)`,
-        value: surplus * people[person].share,
-      });
+    for (const owner of owners)
+      if (owner.equity > 0)
+        uses.push({
+          id: `out-${owner.id}`,
+          kind: "owner",
+          color: owner.color,
+          label: `${owner.name} (${Math.round(owner.equity)}%)`,
+          value: surplus * (owner.equity / 100),
+        });
   for (const use of uses) nodes.push({ ...use, column: 2 });
 
   // Fill uses in order from the rent pot, then from the top-up, so ribbons
