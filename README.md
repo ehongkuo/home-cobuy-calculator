@@ -47,3 +47,36 @@ To run this project locally on your machine:
    npm test
    npm run lint
    ```
+
+## Deploying
+
+The app is a static site hosted on Cloudflare Pages. It has no backend: scenario inputs live in the URL hash (`#s=…`), which browsers never send to the server.
+
+### One-time setup
+
+In the Cloudflare dashboard, go to **Workers & Pages → Create → Pages → Connect to Git**, pick this repo, and use:
+
+| Setting | Value |
+| --- | --- |
+| Production branch | `main` |
+| Framework preset | None (or Vite) |
+| Root directory | `app` |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+
+### How updates ship
+
+- Every pull request gets its own preview URL, posted on the PR.
+- Merging to `main` deploys production at `<project>.pages.dev`.
+- To roll back, open the project's **Deployments** list and choose **Rollback** on an earlier build.
+
+### Limiting who can open it
+
+The site is public by default. Anyone with a **Share** link also sees that scenario's numbers. To restrict the site to the owners, put Cloudflare Access (free for up to 50 users) in front of it:
+
+- **Production:** **Zero Trust → Access → Applications → Add an application → Self-hosted**, set the domain to `<project>.pages.dev`, and add a policy allowing the owners' emails.
+- **Previews:** in the Pages project, open **Settings → General** and enable the access policy for preview deployments.
+
+### CI and branch protection
+
+`.github/workflows/ci.yml` runs tests, lint and a build on every PR and push to `main`. Turn on branch protection so nothing broken reaches production: **Settings → Branches → Add rule** for `main`, enable **Require status checks to pass before merging**, and select the `test` check.
