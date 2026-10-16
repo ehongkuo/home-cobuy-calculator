@@ -1,5 +1,5 @@
-import React from "react";
-import { Info, Home, Receipt, Wallet, TrendingUp, PiggyBank } from "lucide-react";
+import React, { useState } from "react";
+import { Info, Home, Receipt, Wallet, TrendingUp, PiggyBank, ChevronDown } from "lucide-react";
 import { FLOW_COLORS, formatCurrency } from "./utils";
 import { buildRentFlow } from "./financialModel";
 import RentFlowSankey from "./RentFlowSankey";
@@ -41,27 +41,29 @@ const BreakdownRow = ({ icon: Icon, label, value, isNested = false, color = "var
   </div>
 );
 
+// One owner's monthly net. On phones the breakdown collapses behind the header.
 function OwnerCard({ owner, isRental, includeTaxSavings }) {
+  const [open, setOpen] = useState(false);
   const share = pct(owner.share);
   return (
-    <div
-      className="card hover-card"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        ...(owner.isYou && { border: "1px solid rgba(99, 102, 241, 0.3)", boxShadow: "0 0 20px rgba(99, 102, 241, 0.05)" }),
-      }}
-    >
-      <div style={{ paddingBottom: "16px", borderBottom: "1px solid var(--border-subtle)", marginBottom: "16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8rem", textTransform: "uppercase", color: owner.isYou ? "var(--accent-blue)" : "var(--text-muted)", fontWeight: owner.isYou ? 700 : 600, letterSpacing: "1px" }}>
+    <div className={`card hover-card owner-card${owner.isYou ? " is-you" : ""}${open ? " is-open" : ""}`}>
+      <button
+        type="button"
+        className="owner-card-head"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="owner-card-title">
           <span className="rentflow-dot" style={{ background: owner.color }} />
           {owner.name} ({share})
-        </div>
-        <div style={{ fontSize: "1.8rem", fontWeight: 700, color: owner.net >= 0 ? "var(--positive)" : "var(--text-primary)", marginTop: "4px" }}>
-          {formatCurrency(owner.net)}<span style={{ fontSize: "0.9rem", color: "var(--text-muted)", fontWeight: 500 }}>/mo</span>
-        </div>
-      </div>
-      <div style={{ flex: 1 }}>
+        </span>
+        <span className={`owner-card-net${owner.net >= 0 ? " is-positive" : ""}`}>
+          {formatCurrency(owner.net)}
+          <span className="owner-card-unit">/mo</span>
+        </span>
+        <ChevronDown size={18} className="owner-card-chevron" aria-hidden="true" />
+      </button>
+      <div className="owner-card-body">
         <BreakdownRow icon={Home} label="Property Costs" value={`-${formatCurrency(owner.expenses)}`} />
         <BreakdownRow label={`Mortgage (${share})`} value={`-${formatCurrency(owner.split.mortgage)}`} isNested />
         <BreakdownRow label={`Prop Tax (${share})`} value={`-${formatCurrency(owner.split.propertyTax)}`} isNested />
@@ -197,12 +199,12 @@ function CashFlowTab({
       {/* Upfront cash */}
       <div className="cash-strip">
         <div className="cash-strip-title">
-          <PiggyBank size={16} /> Cash to close: {formatCurrency(cashToClose.total)}
+          <PiggyBank size={16} /> Cash to close <strong>{formatCurrency(cashToClose.total)}</strong>
         </div>
         <div className="cash-strip-people">
           {owners.map((o) => (
-            <span key={o.id} className={o.isYou ? "cash-strip-you" : undefined}>
-              {o.name} {formatCurrency(cashToClose.byPerson[o.id]?.total ?? 0)}
+            <span key={o.id} className={`cash-strip-person${o.isYou ? " cash-strip-you" : ""}`}>
+              <span>{o.name}</span> <strong>{formatCurrency(cashToClose.byPerson[o.id]?.total ?? 0)}</strong>
             </span>
           ))}
         </div>

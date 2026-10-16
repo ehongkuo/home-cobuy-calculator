@@ -1,0 +1,14 @@
+// Cloudflare Workers config: serves the Vite build in dist/ as static assets.
+// No Worker script runs, so requests don't count toward the free-plan limit.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "home-cobuy-calculator",
+  "compatibility_date": "2026-10-01",
+  // Serve production at <name>.<subdomain>.workers.dev, and give each
+  // non-production build its own preview URL.
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./dist"
+  }
+}

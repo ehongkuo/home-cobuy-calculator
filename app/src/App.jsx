@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Home,
   DollarSign,
@@ -57,6 +57,12 @@ const loadInputs = () =>
 function App() {
   const [activeTab, setActiveTab] = useState("cashflow");
   const [assumptionsOpen, setAssumptionsOpen] = useState(false);
+  const mainRef = useRef(null);
+
+  // Each tab starts at the top instead of keeping the last tab's scroll position.
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0);
+  }, [activeTab]);
 
   // Every input lives in one scenario object so it can be shared by URL
   // and exported/imported as JSON.
@@ -319,7 +325,7 @@ function App() {
       {/* ─── TOP BAR ─── */}
       <header className={`topbar ${assumptionsOpen ? "assumptions-open" : ""}`}>
         <div className="topbar-row">
-          <h1 className="topbar-title">SF Condo Financial Model</h1>
+          <h1 className="topbar-title">Real Estate Co-Buy Calculator</h1>
 
           <div className="year-control">
             <label htmlFor="projection-year" className="year-control-label">
@@ -368,7 +374,8 @@ function App() {
               onReset={() => setInputs(normalizeInputs(DEFAULT_INPUTS))}
             />
             <span className={`topbar-badge net-badge ${userNet >= 0 ? "badge-green" : "badge-red"}`}>
-              {you.name === "You" ? "Your" : `${you.name}'s`} net: {formatCurrency(userNet)}/mo
+              <span className="net-label-long">{you.name === "You" ? "Your" : `${you.name}'s`} net:</span>
+              <span className="net-label-short">Net</span> {formatCurrency(userNet)}/mo
             </span>
           </div>
 
@@ -394,7 +401,7 @@ function App() {
       </header>
 
       {/* ─── MAIN CONTENT ─── */}
-      <main className="main-content" id="main-content">
+      <main className="main-content" id="main-content" ref={mainRef}>
         <h2 className="tab-page-title">
           {activeTab === "cashflow" && "Monthly Cash Flow"}
           {activeTab === "loan" && "Loan Details"}

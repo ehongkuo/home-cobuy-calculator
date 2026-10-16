@@ -7,6 +7,9 @@ const BOTTOM = 26;
 const NODE_W = 12;
 const GAP = [18, 40, 14];
 const COMPACT_WIDTH = 520;
+// Below this the side labels leave too little room for the flows, so the
+// chart goes edge to edge and the values move to a legend underneath.
+const LEGEND_WIDTH = 440;
 
 function useWidth(ref) {
   const [width, setWidth] = useState(560);
@@ -25,9 +28,10 @@ function useWidth(ref) {
 function layout(flow, width) {
   // Narrow charts stack each side label as name over amount.
   const compact = width < COMPACT_WIDTH;
+  const legend = width < LEGEND_WIDTH;
   const labelGap = compact ? 28 : 17;
-  const padLeft = compact ? 66 : Math.min(130, width * 0.24);
-  const padRight = compact ? 106 : Math.min(170, width * 0.3);
+  const padLeft = legend ? 0 : compact ? 66 : Math.min(130, width * 0.24);
+  const padRight = legend ? 0 : compact ? 106 : Math.min(170, width * 0.3);
   const xs = [padLeft, (padLeft + width - padRight - NODE_W) / 2, width - padRight - NODE_W];
   const columns = [0, 1, 2].map((c) => flow.nodes.filter((n) => n.column === c));
   const total = Math.max(1, ...columns.map((col) => col.reduce((s, n) => s + n.value, 0)));
@@ -69,7 +73,7 @@ function layout(flow, width) {
   spread(columns[0]);
   spread(columns[2]);
 
-  return { nodes: Object.values(nodes), links, compact };
+  return { nodes: Object.values(nodes), links, compact, legend };
 }
 
 const colorOf = (node) => node.color ?? FLOW_COLORS[node.kind];
@@ -84,7 +88,7 @@ export default function RentFlowSankey({ flow }) {
   const width = useWidth(wrapRef);
   const [hover, setHover] = useState(null);
   const [tip, setTip] = useState(null);
-  const { nodes, links, compact } = useMemo(() => layout(flow, width), [flow, width]);
+  const { nodes, links, compact, legend } = useMemo(() => layout(flow, width), [flow, width]);
   const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
   const isActive = (link) =>
@@ -111,91 +115,110 @@ export default function RentFlowSankey({ flow }) {
   };
 
   return (
-    <div className="sankey-wrap" ref={wrapRef} onMouseLeave={clear}>
-      <svg
-        className={compact ? "is-compact" : undefined}
-        width={width}
-        height={HEIGHT}
-        viewBox={`0 0 ${width} ${HEIGHT}`}
-        role="img"
-        aria-label={`Monthly rent flow: ${flow.links
-          .map((l) => `${byId[l.source]?.label} to ${byId[l.target]?.label} ${formatCurrency(l.value)}`)
-          .join("; ")}`}
-      >
-        <defs>
-          {links.map((l) => (
-            <linearGradient key={l.id} id={`flow-grad-${l.id}`} gradientUnits="userSpaceOnUse" x1={l.x1} x2={l.x2} y1="0" y2="0">
-              <stop offset="0%" stopColor={colorOf(byId[l.source])} />
-              <stop offset="100%" stopColor={colorOf(byId[l.target])} />
-            </linearGradient>
-          ))}
-        </defs>
-
-        {links.map((l) => (
-          <path
-            key={l.id}
-            className={`sankey-ribbon${isActive(l) ? "" : " is-dim"}${hover && isActive(l) ? " is-hot" : ""}`}
-            d={ribbon(l)}
-            fill={`url(#flow-grad-${l.id})`}
-            onMouseEnter={() => setHover({ type: "link", id: l.id })}
-            onMouseMove={(e) =>
-              track(e, [`${byId[l.source].label} → ${byId[l.target].label}`, `${formatCurrency(l.value)}/mo`])
-            }
-            onMouseLeave={clear}
-          />
-        ))}
-
-        {nodes.map((n) => {
-          const color = colorOf(n);
-          const dim = hover && hover.type === "node" && hover.id !== n.id &&
-            !links.some((l) => isActive(l) && (l.source === n.id || l.target === n.id));
-          return (
-            <g
-              key={n.id}
-              className={`sankey-node${dim ? " is-dim" : ""}`}
-              onMouseEnter={() => setHover({ type: "node", id: n.id })}
-              onMouseMove={(e) => track(e, nodeLines(n))}
-              onMouseLeave={clear}
-            >
-              <rect x={n.x} y={n.y} width={NODE_W} height={n.h} rx={3} fill={color} />
-              {n.column === 1 ? (
-                <text x={n.x + NODE_W / 2} y={n.id === "pot" ? n.y - 8 : n.y + n.h + 18} textAnchor="middle" className="sankey-text">
-                  <tspan className="sankey-name">{n.label}</tspan>
-                  <tspan className="sankey-amount" dx="6">{formatCurrency(n.value)}</tspan>
-                </text>
-              ) : (
-                <text
-                  x={n.column === 0 ? n.x - 8 : n.x + NODE_W + 8}
-                  y={n.labelY}
-                  dy={compact ? "-0.2em" : "0.35em"}
-                  textAnchor={n.column === 0 ? "end" : "start"}
-                  className="sankey-text"
-                >
-                  <tspan className="sankey-name">{n.label}</tspan>
-                  <tspan
-                    className="sankey-amount"
-                    {...(compact
-                      ? { x: n.column === 0 ? n.x - 8 : n.x + NODE_W + 8, dy: "1.15em" }
-                      : { dx: 6 })}
-                  >
-                    {formatCurrency(n.value)}
-                  </tspan>
-                </text>
-              )}
-            </g>
-          );
-        })}
-      </svg>
-      {tip && (
-        <div
-          className="sankey-tip"
-          style={{ left: Math.min(tip.x + 14, width - 190), top: tip.y + 14 }}
+    <>
+      <div className="sankey-wrap" ref={wrapRef} onMouseLeave={clear}>
+        <svg
+          className={compact ? "is-compact" : undefined}
+          width={width}
+          height={HEIGHT}
+          viewBox={`0 0 ${width} ${HEIGHT}`}
+          role="img"
+          aria-label={`Monthly rent flow: ${flow.links
+            .map((l) => `${byId[l.source]?.label} to ${byId[l.target]?.label} ${formatCurrency(l.value)}`)
+            .join("; ")}`}
         >
-          {tip.lines.map((line, i) => (
-            <div key={i} className={i === 0 ? "sankey-tip-head" : undefined}>{line}</div>
+          <defs>
+            {links.map((l) => (
+              <linearGradient key={l.id} id={`flow-grad-${l.id}`} gradientUnits="userSpaceOnUse" x1={l.x1} x2={l.x2} y1="0" y2="0">
+                <stop offset="0%" stopColor={colorOf(byId[l.source])} />
+                <stop offset="100%" stopColor={colorOf(byId[l.target])} />
+              </linearGradient>
+            ))}
+          </defs>
+
+          {links.map((l) => (
+            <path
+              key={l.id}
+              className={`sankey-ribbon${isActive(l) ? "" : " is-dim"}${hover && isActive(l) ? " is-hot" : ""}`}
+              d={ribbon(l)}
+              fill={`url(#flow-grad-${l.id})`}
+              onMouseEnter={() => setHover({ type: "link", id: l.id })}
+              onMouseMove={(e) =>
+                track(e, [`${byId[l.source].label} → ${byId[l.target].label}`, `${formatCurrency(l.value)}/mo`])
+              }
+              onMouseLeave={clear}
+            />
+          ))}
+
+          {nodes.map((n) => {
+            const color = colorOf(n);
+            const dim = hover && hover.type === "node" && hover.id !== n.id &&
+              !links.some((l) => isActive(l) && (l.source === n.id || l.target === n.id));
+            return (
+              <g
+                key={n.id}
+                className={`sankey-node${dim ? " is-dim" : ""}`}
+                onMouseEnter={() => setHover({ type: "node", id: n.id })}
+                onMouseMove={(e) => track(e, nodeLines(n))}
+                onMouseLeave={clear}
+              >
+                <rect x={n.x} y={n.y} width={NODE_W} height={n.h} rx={3} fill={color} />
+                {legend && n.column !== 1 ? null : n.column === 1 ? (
+                  <text x={n.x + NODE_W / 2} y={n.id === "pot" ? n.y - 8 : n.y + n.h + 18} textAnchor="middle" className="sankey-text">
+                    <tspan className="sankey-name">{n.label}</tspan>
+                    <tspan className="sankey-amount" dx="6">{formatCurrency(n.value)}</tspan>
+                  </text>
+                ) : (
+                  <text
+                    x={n.column === 0 ? n.x - 8 : n.x + NODE_W + 8}
+                    y={n.labelY}
+                    dy={compact ? "-0.2em" : "0.35em"}
+                    textAnchor={n.column === 0 ? "end" : "start"}
+                    className="sankey-text"
+                  >
+                    <tspan className="sankey-name">{n.label}</tspan>
+                    <tspan
+                      className="sankey-amount"
+                      {...(compact
+                        ? { x: n.column === 0 ? n.x - 8 : n.x + NODE_W + 8, dy: "1.15em" }
+                        : { dx: 6 })}
+                    >
+                      {formatCurrency(n.value)}
+                    </tspan>
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+        {tip && (
+          <div
+            className="sankey-tip"
+            style={{ left: Math.min(tip.x + 14, width - 190), top: tip.y + 14 }}
+          >
+            {tip.lines.map((line, i) => (
+              <div key={i} className={i === 0 ? "sankey-tip-head" : undefined}>{line}</div>
+            ))}
+          </div>
+        )}
+      </div>
+      {legend && (
+        <div className="sankey-legend">
+          {[0, 2].map((column) => (
+            <ul key={column} aria-label={column === 0 ? "Money in" : "Money out"}>
+              {nodes
+                .filter((n) => n.column === column)
+                .map((n) => (
+                  <li key={n.id}>
+                    <span className="sankey-swatch" style={{ background: colorOf(n) }} />
+                    <span className="sankey-legend-name">{n.label}</span>
+                    <span className="sankey-legend-amount">{formatCurrency(n.value)}</span>
+                  </li>
+                ))}
+            </ul>
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }
