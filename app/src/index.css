@@ -2156,3 +2156,159 @@ button:focus:not(:focus-visible) {
 .sankey-wrap svg.is-compact .sankey-text {
   font-size: 11px;
 }
+
+/* ============================================================
+   MOBILE — labeled tab bar, touch-size controls, safe areas
+   ============================================================ */
+.net-label-short {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* dvh tracks the visible area as mobile browser toolbars show and hide */
+  .app-layout {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* Bottom tab bar: icon + label, clear of the iPhone home indicator */
+  .sidebar {
+    height: calc(60px + env(safe-area-inset-bottom));
+    padding: 0 4px env(safe-area-inset-bottom);
+  }
+
+  .sidebar-btn {
+    flex: 1;
+    width: auto;
+    height: 52px;
+    flex-direction: column;
+    gap: 3px;
+    font-size: inherit;
+  }
+
+  .sidebar-btn.active {
+    border-bottom: none;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Touch screens keep :hover after a tap, which looked like a second active tab */
+  .sidebar-btn:not(.active):hover {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .sidebar-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .main-content {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  /* Compact top bar */
+  .topbar {
+    gap: 8px;
+    padding: 8px 16px 10px;
+  }
+
+  .topbar-row {
+    gap: 8px 12px;
+  }
+
+  .net-badge {
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .net-label-long {
+    display: none;
+  }
+
+  .net-label-short {
+    display: inline;
+  }
+
+  /* Tap targets: at least ~36-44px tall */
+  .topbar-status {
+    gap: 6px;
+  }
+
+  .topbar-badge {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 0.8rem;
+  }
+
+  .occupancy-toggle {
+    width: auto;
+    min-width: 72px;
+  }
+
+  .occupancy-toggle svg {
+    display: none;
+  }
+
+  .tax-toggle input {
+    width: 18px;
+    height: 18px;
+  }
+
+  .mobile-assumptions-toggle {
+    min-height: 40px;
+  }
+
+  .cash-strip-link {
+    min-height: 44px;
+    padding: 0 4px;
+  }
+
+  .assumption-range {
+    height: 8px;
+    margin: 10px 0;
+  }
+
+  .assumption-range::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  .assumption-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* 16px inputs stop iOS Safari from zooming in on focus */
+  .assumption-input {
+    font-size: 16px;
+  }
+
+  /* Deal terms: label above the value so neither gets cut off */
+  .global-assumptions .assumption-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .global-assumptions .assumption-input {
+    justify-content: flex-end;
+  }
+
+  /* Amortization table: keep the Year column visible while scrolling sideways */
+  .amort-table th:first-child,
+  .amort-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--bg-secondary);
+  }
+
+  .amort-table td:first-child {
+    z-index: 1;
+  }
+
+  .amort-table th:first-child {
+    z-index: 3;
+  }
+}
