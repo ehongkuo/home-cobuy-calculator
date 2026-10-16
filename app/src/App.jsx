@@ -24,6 +24,8 @@ import LongTermTab from "./LongTermTab";
 import OpportunityCostTab from "./OpportunityCostTab";
 import { AssumptionPanel, AssumptionSlider } from "./Assumption";
 import { formatCurrency } from "./utils";
+import { WheelField } from "./WheelPicker";
+import { MOBILE_QUERY, useMediaQuery } from "./useMediaQuery";
 import {
   buildAmortizationSchedule,
   calculateCashToClose,
@@ -45,6 +47,7 @@ const TAB_CONFIG = [
 function App() {
   const [activeTab, setActiveTab] = useState("cashflow");
   const [assumptionsOpen, setAssumptionsOpen] = useState(false);
+  const isMobile = useMediaQuery(MOBILE_QUERY);
   const mainRef = useRef(null);
 
   // Each tab starts at the top instead of keeping the last tab's scroll position.
@@ -269,23 +272,38 @@ function App() {
         <div className="topbar-row">
           <h1 className="topbar-title">Real Estate Co-Buy Calculator</h1>
 
-          <div className="year-control">
-            <label htmlFor="projection-year" className="year-control-label">
-              <Clock size={14} /> Year <strong>{selectedYear}</strong>
-            </label>
-            <input
+          {isMobile ? (
+            <WheelField
               id="projection-year"
-              type="range"
+              icon={Clock}
+              label="Projection year"
+              value={selectedYear}
+              setValue={setSelectedYear}
               min={1}
               max={30}
               step={1}
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="assumption-range"
-              style={{ "--fill": `${((selectedYear - 1) / 29) * 100}%` }}
-              aria-label="Projection year"
+              format={(v) => `Year ${v}`}
+              className="year-wheel"
             />
-          </div>
+          ) : (
+            <div className="year-control">
+              <label htmlFor="projection-year" className="year-control-label">
+                <Clock size={14} /> Year <strong>{selectedYear}</strong>
+              </label>
+              <input
+                id="projection-year"
+                type="range"
+                min={1}
+                max={30}
+                step={1}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="assumption-range"
+                style={{ "--fill": `${((selectedYear - 1) / 29) * 100}%` }}
+                aria-label="Projection year"
+              />
+            </div>
+          )}
 
           <div className="topbar-status">
             <button

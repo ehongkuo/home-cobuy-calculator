@@ -1,4 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from "react";
+import { WheelField } from "./WheelPicker";
+import { MOBILE_QUERY, useMediaQuery } from "./useMediaQuery";
 
 const formatters = {
   currency: (v) =>
@@ -19,6 +21,7 @@ const formatValue = (value, format) => {
   return format === "currency/mo" ? `${text}/mo` : text;
 };
 
+// On phones it becomes a tap-to-open scroll wheel instead.
 // A labeled slider that is always fully visible, with a typed-in value field.
 export function AssumptionSlider({
   icon: Icon,
@@ -32,6 +35,7 @@ export function AssumptionSlider({
   format = "currency",
 }) {
   const id = useId();
+  const isMobile = useMediaQuery(MOBILE_QUERY);
   const [draft, setDraft] = useState(String(value));
   const [focused, setFocused] = useState(false);
   const cancelled = useRef(false);
@@ -52,6 +56,23 @@ export function AssumptionSlider({
     }
     setValue(Math.min(max, Math.max(min, parsed)));
   };
+
+  if (isMobile) {
+    return (
+      <WheelField
+        id={id}
+        icon={Icon}
+        label={label}
+        hint={hint}
+        value={value}
+        setValue={setValue}
+        min={min}
+        max={max}
+        step={step}
+        format={(v) => formatValue(v, format)}
+      />
+    );
+  }
 
   const fill = ((value - min) / (max - min)) * 100;
   const prefix = format.startsWith("currency") ? "$" : format === "years" ? "Yr" : "";
