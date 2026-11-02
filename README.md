@@ -1,6 +1,6 @@
 # Real Estate Co-Buy Calculator 🏢
 
-**Try it:** https://home-cobuy-calculator.ehongkuo.workers.dev
+**Try it:** https://home-cobuy-calculator.sidequestapps.workers.dev
 
 Buying a home with other people raises questions a normal mortgage calculator can't answer. Who covers the gap when rent doesn't cover the payment? What does each owner actually pay each month? What happens to taxes when the people living there move out and it becomes a rental? Would you be better off just renting?
 
