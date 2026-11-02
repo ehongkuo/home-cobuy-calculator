@@ -14,6 +14,12 @@ The example scenario has an investor at 50% and two owners living there at 25% e
 
 It works on a phone or a computer. Your inputs live in the page's link, never on a server. **Share** copies a link that reopens your exact scenario, so anyone you send it to sees your numbers.
 
+<p align="center">
+  <img src="docs/screenshots/cashflow.png" alt="Cash Flow tab on a computer, showing the owners, rent inputs and a chart of where the monthly payment goes" width="72%">
+  &nbsp;
+  <img src="docs/screenshots/phone-cashflow.png" alt="Cash Flow tab on a phone" width="22%">
+</p>
+
 ## How to use it
 
 1. **Set up the owners:** on the Cash Flow tab, tap **Edit** on the Owners row. Enter names, equity % and title %, check who lives there and which one is you, then tap **Done**. Each resident's rent gets its own slider in the Rent panel.
@@ -34,6 +40,27 @@ It works on a phone or a computer. Your inputs live in the page's link, never on
 | ⚖️ **Taxes** | How much do mortgage interest and property tax deductions save? In rental years, what do depreciation and expenses do to the LLC's taxes? |
 | 🏗️ **Long-Term** | What's the home worth and how much equity is there over 30 years? How long can you sell without capital gains tax after moving out? |
 | 📊 **Buy vs Rent** | Would you come out ahead buying, or renting and investing the difference in the S&P 500? |
+
+<details>
+<summary><strong>Screenshots of each tab</strong> (example scenario)</summary>
+
+**📈 Loan**
+
+![Loan tab: cash needed up front, how the payment is derived, and the amortization schedule](docs/screenshots/loan.png)
+
+**⚖️ Taxes**
+
+![Taxes tab: which monthly costs are deductible and each owner's share](docs/screenshots/taxes.png)
+
+**🏗️ Long-Term**
+
+![Long-Term tab: HOA and property value growth, the Section 121 window and the 30-year projection](docs/screenshots/longterm.png)
+
+**📊 Buy vs Rent**
+
+![Buy vs Rent tab: budget inputs and a side-by-side comparison of buying versus renting and investing](docs/screenshots/opportunity.png)
+
+</details>
 
 The Cash Flow tab also warns you if an owner who isn't on the title contributes enough each year that gift tax rules might apply.
 
