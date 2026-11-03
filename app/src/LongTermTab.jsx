@@ -122,13 +122,13 @@ function LongTermTab({
       {/* Immediate feedback panels */}
       <div className="card controls-card" style={{ marginBottom: "24px" }}>
         <h2>
-          <TrendingUp className="icon" /> Long-Term Forecasting
+          <TrendingUp className="icon" /> Long-term forecast
         </h2>
 
-        <p style={{ color: "#94a3b8", marginBottom: "24px" }}>
+        <p style={{ color: "var(--text-secondary)", marginBottom: "24px" }}>
           The values below reflect the global settings in your control panel
           (Appreciation: {appreciation}%, HOA Inflation: {hoaInflation}%,
-          Move-Out: Year {moveOutYear}).
+          Move-out: year {moveOutYear}).
         </p>
 
         <div
@@ -142,7 +142,7 @@ function LongTermTab({
           <div style={{ flex: 1, minWidth: "200px" }}>
             <h3
               style={{
-                color: "#e2e8f0",
+                color: "var(--text-primary)",
                 marginBottom: "12px",
                 fontSize: "1.1rem",
               }}
@@ -152,52 +152,52 @@ function LongTermTab({
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <div
                 style={{
-                  background: "rgba(168, 85, 247, 0.1)",
+                  background: "color-mix(in srgb, var(--rental) 6%, transparent)",
                   padding: "10px 16px",
                   borderRadius: "8px",
-                  border: "1px solid rgba(168, 85, 247, 0.2)",
+                  border: "1px solid color-mix(in srgb, var(--rental) 20%, transparent)",
                   flex: 1,
                   textAlign: "center",
                 }}
               >
-                <div style={{ color: "#94a3b8", fontSize: "0.8rem" }}>
-                  HOA Today
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
+                  HOA today
                 </div>
-                <div style={{ color: "#e2e8f0", fontWeight: "bold" }}>
+                <div style={{ color: "var(--text-primary)", fontWeight: "bold" }}>
                   {formatCurrency(baseHOA)}/mo
                 </div>
               </div>
               <div
                 style={{
-                  background: "rgba(168, 85, 247, 0.1)",
+                  background: "color-mix(in srgb, var(--rental) 6%, transparent)",
                   padding: "10px 16px",
                   borderRadius: "8px",
-                  border: "1px solid rgba(168, 85, 247, 0.2)",
+                  border: "1px solid color-mix(in srgb, var(--rental) 20%, transparent)",
                   flex: 1,
                   textAlign: "center",
                 }}
               >
-                <div style={{ color: "#94a3b8", fontSize: "0.8rem" }}>
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
                   Year 10
                 </div>
-                <div style={{ color: "#e2e8f0", fontWeight: "bold" }}>
+                <div style={{ color: "var(--text-primary)", fontWeight: "bold" }}>
                   {formatCurrency(year10?.monthlyHOA || 0)}/mo
                 </div>
               </div>
               <div
                 style={{
-                  background: "rgba(168, 85, 247, 0.15)",
+                  background: "color-mix(in srgb, var(--rental) 6%, transparent)",
                   padding: "10px 16px",
                   borderRadius: "8px",
-                  border: "1px solid rgba(168, 85, 247, 0.3)",
+                  border: "1px solid color-mix(in srgb, var(--rental) 30%, transparent)",
                   flex: 1,
                   textAlign: "center",
                 }}
               >
-                <div style={{ color: "#94a3b8", fontSize: "0.8rem" }}>
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
                   Year 30
                 </div>
-                <div style={{ color: "#a855f7", fontWeight: "bold" }}>
+                <div style={{ color: "var(--rental)", fontWeight: "bold" }}>
                   {formatCurrency(year30?.monthlyHOA || 0)}/mo
                 </div>
               </div>
@@ -207,7 +207,7 @@ function LongTermTab({
           <div style={{ flex: 1, minWidth: "200px" }}>
             <h3
               style={{
-                color: "#e2e8f0",
+                color: "var(--text-primary)",
                 marginBottom: "12px",
                 fontSize: "1.1rem",
               }}
@@ -217,52 +217,52 @@ function LongTermTab({
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <div
                 style={{
-                  background: "rgba(96, 165, 250, 0.1)",
+                  background: "color-mix(in srgb, var(--info) 6%, transparent)",
                   padding: "10px 16px",
                   borderRadius: "8px",
-                  border: "1px solid rgba(96, 165, 250, 0.2)",
+                  border: "1px solid color-mix(in srgb, var(--info) 20%, transparent)",
                   flex: 1,
                   textAlign: "center",
                 }}
               >
-                <div style={{ color: "#94a3b8", fontSize: "0.8rem" }}>
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
                   Today
                 </div>
-                <div style={{ color: "#e2e8f0", fontWeight: "bold" }}>
+                <div style={{ color: "var(--text-primary)", fontWeight: "bold" }}>
                   {formatCurrency(purchasePrice)}
                 </div>
               </div>
               <div
                 style={{
-                  background: "rgba(96, 165, 250, 0.1)",
+                  background: "color-mix(in srgb, var(--info) 6%, transparent)",
                   padding: "10px 16px",
                   borderRadius: "8px",
-                  border: "1px solid rgba(96, 165, 250, 0.2)",
+                  border: "1px solid color-mix(in srgb, var(--info) 20%, transparent)",
                   flex: 1,
                   textAlign: "center",
                 }}
               >
-                <div style={{ color: "#94a3b8", fontSize: "0.8rem" }}>
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
                   Year 10
                 </div>
-                <div style={{ color: "#e2e8f0", fontWeight: "bold" }}>
+                <div style={{ color: "var(--text-primary)", fontWeight: "bold" }}>
                   {formatCurrency(year10?.marketValue || 0)}
                 </div>
               </div>
               <div
                 style={{
-                  background: "rgba(96, 165, 250, 0.15)",
+                  background: "color-mix(in srgb, var(--info) 6%, transparent)",
                   padding: "10px 16px",
                   borderRadius: "8px",
-                  border: "1px solid rgba(96, 165, 250, 0.3)",
+                  border: "1px solid color-mix(in srgb, var(--info) 30%, transparent)",
                   flex: 1,
                   textAlign: "center",
                 }}
               >
-                <div style={{ color: "#94a3b8", fontSize: "0.8rem" }}>
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
                   Year 30
                 </div>
-                <div style={{ color: "#60a5fa", fontWeight: "bold" }}>
+                <div style={{ color: "var(--info)", fontWeight: "bold" }}>
                   {formatCurrency(year30?.marketValue || 0)}
                 </div>
               </div>
@@ -272,10 +272,10 @@ function LongTermTab({
       </div>
 
       {/* Section 121 Explainer */}
-      <div className="card" style={{ marginBottom: "24px", display: "flex", gap: "12px", background: "rgba(96, 165, 250, 0.1)", border: "1px solid rgba(96, 165, 250, 0.3)" }}>
-        <Info color="#60a5fa" size={28} style={{ flexShrink: 0, marginTop: "2px" }} />
+      <div className="card" style={{ marginBottom: "24px", display: "flex", gap: "12px", background: "color-mix(in srgb, var(--info) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--info) 30%, transparent)" }}>
+        <Info color="var(--info)" size={28} style={{ flexShrink: 0, marginTop: "2px" }} />
         <div>
-          <h2 style={{ marginTop: 0 }}>Section 121 Tax-Free Capital Gains Window</h2>
+          <h2 style={{ marginTop: 0 }}>Section 121 tax-free capital gains window</h2>
           <p>
             The IRS lets each owner on title exclude up to $250,000 of gain if
             they lived in the home for 2 of the 5 years before selling. This
@@ -283,7 +283,7 @@ function LongTermTab({
             {exclusionOwners === 1 ? "owner" : "owners"} (on title and paying
             rent), so up to {formatCurrency(250000 * exclusionOwners)} combined.
           </p>
-          <p style={{ color: "#f87171", marginTop: "8px", marginBottom: 0 }}>
+          <p style={{ color: "var(--negative)", marginTop: "8px", marginBottom: 0 }}>
             Moving out after <strong>Year {moveOutYear}</strong> starts the clock
             — you have until the end of <strong>Year {moveOutYear + 3}</strong>{" "}
             to sell and still qualify. Depreciation claimed while renting is
@@ -296,7 +296,7 @@ function LongTermTab({
       <div className="card" style={{ marginBottom: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
           <h2 style={{ margin: 0 }}>
-            <TrendingUp className="icon" /> 30-Year Projection
+            <TrendingUp className="icon" /> 30-year projection
           </h2>
           <button
             onClick={() => setShowFullTable(!showFullTable)}
@@ -307,9 +307,9 @@ function LongTermTab({
               alignItems: "center",
               gap: "4px",
               fontSize: "0.8rem",
-              background: showFullTable ? "rgba(96, 165, 250, 0.15)" : "rgba(255, 255, 255, 0.05)",
-              borderColor: showFullTable ? "rgba(96, 165, 250, 0.3)" : "rgba(255, 255, 255, 0.1)",
-              color: showFullTable ? "#60a5fa" : "#94a3b8",
+              background: showFullTable ? "color-mix(in srgb, var(--info) 6%, transparent)" : "color-mix(in srgb, var(--ink) 5%, transparent)",
+              borderColor: showFullTable ? "color-mix(in srgb, var(--info) 30%, transparent)" : "color-mix(in srgb, var(--ink) 10%, transparent)",
+              color: showFullTable ? "var(--info)" : "var(--text-secondary)",
               border: "1px solid",
               padding: "6px 12px",
               borderRadius: "6px",
@@ -324,15 +324,15 @@ function LongTermTab({
             <thead>
               <tr>
                 <th>Year</th>
-                <th>Market Value</th>
-                <th>Loan Balance</th>
+                <th>Market value</th>
+                <th>Loan balance</th>
                 <th>Equity</th>
                 <th>Monthly HOA</th>
-                <th style={{ color: "#a855f7" }}>Cumul. HOA Increase</th>
-                <th style={{ color: "#60a5fa" }}>Appreciation Gain</th>
-                <th style={{ color: "#2dd4bf" }}>Net Position</th>
+                <th>Cumulative HOA increase</th>
+                <th>Appreciation gain</th>
+                <th>Net position</th>
                 <th>Section 121</th>
-                <th>Taxable Gain</th>
+                <th>Taxable gain</th>
               </tr>
             </thead>
             <tbody>
@@ -342,18 +342,18 @@ function LongTermTab({
                   const isExpired = row.section121Status === "expired";
 
                   let rowBg = "transparent";
-                  if (isCurrentMoveOut) rowBg = "rgba(251, 191, 36, 0.15)";
-                  else if (isDeadline) rowBg = "rgba(248, 113, 113, 0.15)";
+                  if (isCurrentMoveOut) rowBg = "color-mix(in srgb, var(--warning) 15%, transparent)";
+                  else if (isDeadline) rowBg = "color-mix(in srgb, var(--negative) 15%, transparent)";
                   else if (row.section121Status === "eligible")
-                    rowBg = "rgba(74, 222, 128, 0.08)";
-                  else if (isExpired) rowBg = "rgba(248, 113, 113, 0.05)";
+                    rowBg = "color-mix(in srgb, var(--positive) 8%, transparent)";
+                  else if (isExpired) rowBg = "color-mix(in srgb, var(--negative) 5%, transparent)";
 
                 return (
                   <tr key={row.year} style={{ background: rowBg }}>
                     <td style={row.year === selectedYear ? { fontWeight: 700, color: "var(--accent-blue)" } : undefined}>
                       Year {row.year}
-                      {isCurrentMoveOut && " 🚚"}
-                      {isDeadline && " ⏰"}
+                      {isCurrentMoveOut && " · move-out"}
+                      {isDeadline && " · last year to sell"}
                     </td>
                     <td>{formatCurrency(row.marketValue)}</td>
                     <td>{formatCurrency(row.loanBalance)}</td>
@@ -383,10 +383,10 @@ function LongTermTab({
                     </td>
                     <td>
                       {row.section121Status === "living" && (
-                        <span style={{ color: "#60a5fa" }}>🏠 Living</span>
+                        <span style={{ color: "var(--info)" }}>Living there</span>
                       )}
                       {row.section121Status === "eligible" && (
-                        <span style={{ color: "#4ade80" }}>
+                        <span style={{ color: "var(--positive)" }}>
                           <CheckCircle
                             size={14}
                             style={{ verticalAlign: "middle" }}
@@ -395,10 +395,10 @@ function LongTermTab({
                         </span>
                       )}
                       {row.section121Status === "too-soon" && (
-                        <span style={{ color: "#94a3b8" }}>Under 2 yrs</span>
+                        <span style={{ color: "var(--text-secondary)" }}>Under 2 yrs</span>
                       )}
                       {row.section121Status === "expired" && (
-                        <span style={{ color: "#f87171" }}>
+                        <span style={{ color: "var(--negative)" }}>
                           <XCircle
                             size={14}
                             style={{ verticalAlign: "middle" }}
@@ -409,7 +409,7 @@ function LongTermTab({
                     </td>
                     <td>
                       {row.capitalGain <= 0 ? (
-                        <span style={{ color: "#94a3b8" }}>—</span>
+                        <span style={{ color: "var(--text-secondary)" }}>—</span>
                       ) : row.taxableGain === 0 ? (
                         <span className="positive">
                           {formatCurrency(0)} (excluded!)
@@ -431,7 +431,7 @@ function LongTermTab({
       {/* Key Takeaways */}
       <div className="grid" style={{ marginBottom: "24px" }}>
         <div className="card">
-          <div className="card-header">HOA Growth Impact</div>
+          <div className="card-header">HOA growth impact</div>
           <div className="card-body">
             <div className="row">
               <span>Year 1 HOA:</span> <span>{formatCurrency(baseHOA)}/mo</span>
@@ -448,7 +448,7 @@ function LongTermTab({
             </div>
             <div className="divider" style={{ margin: "8px 0" }} />
             <div className="row">
-              <span>30yr Extra HOA Paid:</span>{" "}
+              <span>Extra HOA paid over 30 years</span>{" "}
               <span className="negative">
                 {formatCurrency(year30?.cumulativeHOAIncrease || 0)}
               </span>
@@ -456,29 +456,29 @@ function LongTermTab({
           </div>
         </div>
         <div className="card">
-          <div className="card-header">Equity Milestones</div>
+          <div className="card-header">Equity milestones</div>
           <div className="card-body">
             <div className="row">
-              <span>Year 5 Equity:</span>{" "}
+              <span>Year 5 equity</span>{" "}
               <span className="positive">
                 {formatCurrency(year5?.equity || 0)}
               </span>
             </div>
             <div className="row">
-              <span>Year 15 Equity:</span>{" "}
+              <span>Year 15 equity</span>{" "}
               <span className="positive">
                 {formatCurrency(year15?.equity || 0)}
               </span>
             </div>
             <div className="row">
-              <span>Year 30 Equity:</span>{" "}
+              <span>Year 30 equity</span>{" "}
               <span className="positive">
                 {formatCurrency(year30?.equity || 0)}
               </span>
             </div>
             <div className="divider" style={{ margin: "8px 0" }} />
             <div className="row">
-              <span>30yr Appreciation:</span>{" "}
+              <span>Appreciation over 30 years</span>{" "}
               <span className="positive">
                 +{formatCurrency(year30?.appreciationGain || 0)}
               </span>

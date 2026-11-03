@@ -379,8 +379,8 @@ function OpportunityCostTab({
 
       {/* ── Year Header ── */}
       <div style={{ textAlign: "center", margin: "28px 0 16px" }}>
-        <h2 style={{ fontSize: "1.8rem", margin: 0 }}>
-          Year {selectedYear} Showdown
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.75rem", fontWeight: 600, margin: 0 }}>
+          Year {selectedYear} comparison
         </h2>
       </div>
 
@@ -391,20 +391,20 @@ function OpportunityCostTab({
           className={`card hover-card ${data.pathAWins ? "" : "disabled-card"}`}
           style={{
             border: data.pathAWins
-              ? "2px solid #4ade80"
-              : "1px solid rgba(255,255,255,0.08)",
+              ? "2px solid var(--positive)"
+              : "1px solid color-mix(in srgb, var(--ink) 8%, transparent)",
           }}
         >
           <div
             className="card-header"
-            style={{ color: data.pathAWins ? "#4ade80" : "inherit" }}
+            style={{ color: data.pathAWins ? "var(--positive)" : "inherit" }}
           >
-            🏠 Path A: Buy the Condo
+            Path A: Buy
           </div>
           <div className="card-body">
             {/* Hero number */}
             <div className="opp-hero">
-              <span className="opp-hero-label">Monthly to Brokerage</span>
+              <span className="opp-hero-label">Monthly to brokerage</span>
               <span className={`opp-hero-value ${data.finalBuySurplus >= 0 ? "opp-surplus-positive" : "opp-surplus-negative"}`}>
                 {data.finalBuySurplus >= 0 ? "+" : ""}{formatCurrency(data.finalBuySurplus)}/mo
               </span>
@@ -430,7 +430,7 @@ function OpportunityCostTab({
 
             {/* Housing cost breakdown */}
             <div className="opp-section" style={{ marginTop: "12px" }}>
-              <div className="opp-section-title" style={{ color: "#a855f7" }}>
+              <div className="opp-section-title" style={{ color: "var(--rental)" }}>
                 {data.finalIsRental ? "Rental Costs" : "Housing Costs"} — Year {selectedYear}
               </div>
 
@@ -445,7 +445,7 @@ function OpportunityCostTab({
                 tooltip={`HOA inflates ${hoaInflation}%/yr\nYear ${selectedYear}: ${formatCurrency(data.finalHoaShare)}`}
               />
               <Line
-                label={`Property Tax (${sharePct} share)`}
+                label={`Property tax (${sharePct} share)`}
                 amount={-data.finalPropTaxShare}
                 tooltip={`Prop 13: inflates 2%/yr\nYear ${selectedYear}: ${formatCurrency(data.finalPropTaxShare)}`}
               />
@@ -456,10 +456,10 @@ function OpportunityCostTab({
                 />
               )}
               {!data.finalIsRental && (
-                <Line label="Your Rent Payment" amount={-youRent} />
+                <Line label="Your rent payment" amount={-youRent} />
               )}
               <Line
-                label={data.finalIsRental ? `Tenant Income (${sharePct})` : `Rent Pot Back (${sharePct})`}
+                label={data.finalIsRental ? `Tenant income (${sharePct})` : `Rent pot back (${sharePct})`}
                 amount={data.finalRentIncome}
                 tooltip={
                   data.finalIsRental
@@ -469,7 +469,7 @@ function OpportunityCostTab({
               />
               {!data.finalIsRental && data.finalTaxShield > 0 && (
                 <Line
-                  label="Tax Shield"
+                  label="Tax shield"
                   amount={data.finalTaxShield}
                   tooltip={`Schedule A: incremental deductions above standard deduction × ${marginalRate * 100}%\nMonthly: ${formatCurrency(data.finalTaxShield)}`}
                 />
@@ -483,7 +483,7 @@ function OpportunityCostTab({
 
               <div className="opp-cf-divider" />
               <Line
-                label="= Net Housing Cost"
+                label="= Net housing cost"
                 amount={-data.finalBuyHousingCost}
                 bold
               />
@@ -491,24 +491,24 @@ function OpportunityCostTab({
 
             {/* Cumulative Wealth */}
             <div className="opp-section" style={{ marginTop: "12px" }}>
-              <div className="opp-section-title" style={{ color: "#2dd4bf" }}>
-                Net Worth — Year {selectedYear}
+              <div className="opp-section-title" style={{ color: "var(--positive)" }}>
+                Net worth, year {selectedYear}
               </div>
 
               <Line
-                label="Brokerage Account"
+                label="Brokerage account"
                 amount={data.buyBrokerage}
                 tooltip={`Day 1: ${formatCurrency(data.STARTING_CASH - data.totalInitialSunkUser)}\n+ Deposited: ${formatCurrency(data.totalBuySurplusDeposited)}\n+ Market Returns: ${formatCurrency(data.buyCumulativeReturns)}\n= ${formatCurrency(data.buyBrokerage)}`}
               />
               <Line
-                label="Home Equity (net of 6% sale)"
+                label="Home equity (after 6% selling costs)"
                 amount={data.userNetProceeds}
                 tooltip={`Home Value (${sharePct}): ${formatCurrency(data.currentHomeValueUser)}\n- Loan (${sharePct}): ${formatCurrency(data.remainingLoanUser)}\n- Closing (6%): ${formatCurrency(data.sellerClosingCostsUser)}\n= ${formatCurrency(data.userNetProceeds)}`}
               />
               <div className="opp-cf-divider" />
               <div className="opp-cf-line">
                 <span className="opp-cf-label-bold" style={{ fontSize: "1.05rem" }}>
-                  Total Net Worth
+                  Total net worth
                 </span>
                 <span className="positive" style={{ fontSize: "1.3rem", fontWeight: 700 }}>
                   {formatCurrency(data.buyLiquidNetWorth)}
@@ -523,20 +523,20 @@ function OpportunityCostTab({
           className={`card hover-card ${!data.pathAWins ? "" : "disabled-card"}`}
           style={{
             border: !data.pathAWins
-              ? "2px solid #4ade80"
-              : "1px solid rgba(255,255,255,0.08)",
+              ? "2px solid var(--positive)"
+              : "1px solid color-mix(in srgb, var(--ink) 8%, transparent)",
           }}
         >
           <div
             className="card-header"
-            style={{ color: !data.pathAWins ? "#4ade80" : "inherit" }}
+            style={{ color: !data.pathAWins ? "var(--positive)" : "inherit" }}
           >
-            📈 Path B: Rent & Invest
+            Path B: Rent and invest
           </div>
           <div className="card-body">
             {/* Hero number */}
             <div className="opp-hero">
-              <span className="opp-hero-label">Monthly to Brokerage</span>
+              <span className="opp-hero-label">Monthly to brokerage</span>
               <span className={`opp-hero-value ${data.finalRentSurplus >= 0 ? "opp-surplus-positive" : "opp-surplus-negative"}`}>
                 {data.finalRentSurplus >= 0 ? "+" : ""}{formatCurrency(data.finalRentSurplus)}/mo
               </span>
@@ -562,13 +562,13 @@ function OpportunityCostTab({
 
             {/* Housing cost breakdown */}
             <div className="opp-section" style={{ marginTop: "12px" }}>
-              <div className="opp-section-title" style={{ color: "#a855f7" }}>
-                Housing Costs — Year {selectedYear}
+              <div className="opp-section-title" style={{ color: "var(--rental)" }}>
+                Housing costs, year {selectedYear}
               </div>
 
               {data.finalRentHousingCost > 0 ? (
                 <Line
-                  label="Monthly Rent"
+                  label="Monthly rent"
                   amount={-data.finalRentHousingCost}
                   tooltip={`Base: ${formatCurrency(equivalentRent)}/mo\nInflated ${rentInflation}%/yr for ${selectedYear} yr(s)\nYear ${selectedYear}: ${formatCurrency(data.finalRentHousingCost)}/mo`}
                 />
@@ -583,7 +583,7 @@ function OpportunityCostTab({
 
               <div className="opp-cf-divider" />
               <Line
-                label="= Net Housing Cost"
+                label="= Net housing cost"
                 amount={-data.finalRentHousingCost}
                 bold
               />
@@ -591,19 +591,19 @@ function OpportunityCostTab({
 
             {/* Cumulative Wealth */}
             <div className="opp-section" style={{ marginTop: "12px" }}>
-              <div className="opp-section-title" style={{ color: "#2dd4bf" }}>
-                Net Worth — Year {selectedYear}
+              <div className="opp-section-title" style={{ color: "var(--positive)" }}>
+                Net worth, year {selectedYear}
               </div>
 
               <Line
-                label="Brokerage Account"
+                label="Brokerage account"
                 amount={data.rentBrokerage}
                 tooltip={`Day 1: ${formatCurrency(data.STARTING_CASH)} (full — no down payment)\n+ Deposited: ${formatCurrency(data.totalRentSurplusDeposited)}\n+ Market Returns: ${formatCurrency(data.rentCumulativeReturns)}\n= ${formatCurrency(data.rentBrokerage)}`}
               />
               <div className="opp-cf-divider" />
               <div className="opp-cf-line">
                 <span className="opp-cf-label-bold" style={{ fontSize: "1.05rem" }}>
-                  Total Net Worth
+                  Total net worth
                 </span>
                 <span className="positive" style={{ fontSize: "1.3rem", fontWeight: 700 }}>
                   {formatCurrency(data.rentNetWorth)}
@@ -620,17 +620,17 @@ function OpportunityCostTab({
         style={{
           marginTop: "24px",
           textAlign: "center",
-          background: "rgba(15, 23, 42, 0.8)",
+          background: "var(--surface)",
         }}
       >
         <h3 style={{ fontSize: "1.5rem", marginBottom: "12px" }}>
-          {data.pathAWins ? "🏠 Buying Wins!" : "📈 Renting Wins!"}
+          {data.pathAWins ? "Buying comes out ahead" : "Renting comes out ahead"}
         </h3>
-        <p style={{ fontSize: "1.1rem", color: "#cbd5e1" }}>
-          By Year {selectedYear},{" "}
+        <p style={{ fontSize: "1.1rem", color: "var(--text-secondary)" }}>
+          By year {selectedYear},{" "}
           {data.pathAWins ? "buying the condo" : "renting and investing"} puts
           you ahead by{" "}
-          <strong style={{ color: "#4ade80", fontSize: "1.3rem" }}>
+          <strong style={{ color: "var(--positive)", fontSize: "1.3rem" }}>
             {formatCurrency(data.delta)}
           </strong>
         </p>
@@ -650,7 +650,7 @@ function OpportunityCostTab({
             </span>
           </div>
           <div className="opp-verdict-stat">
-            <span className="opp-verdict-label">Total Rent Spent</span>
+            <span className="opp-verdict-label">Total rent spent</span>
             <span className="negative">
               {formatCurrency(data.totalRentHousingSpent)}
             </span>

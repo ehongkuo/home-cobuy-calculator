@@ -63,7 +63,7 @@ const MathTooltip = ({ children, ledger }) => {
         onBlur={() => setOpen(false)}
         onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
         style={{
-          textDecoration: 'underline dotted rgba(255,255,255,0.4)',
+          textDecoration: 'underline dotted color-mix(in srgb, var(--ink) 40%, transparent)',
           textUnderlineOffset: '3px',
           cursor: 'help',
           padding: '10px 0', // taller tap target without changing line height
@@ -82,16 +82,16 @@ const MathTooltip = ({ children, ledger }) => {
             visibility: pos ? 'visible' : 'hidden',
             maxWidth: `calc(100vw - ${MARGIN * 2}px)`,
             overflowX: 'auto',
-            background: '#1e293b',
-            color: '#f8fafc',
+            background: 'var(--tooltip-bg)',
+            color: 'var(--tooltip-text)',
             padding: '12px',
             borderRadius: '8px',
-            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.8)',
+            boxShadow: '0 10px 25px -5px color-mix(in srgb, var(--shadow-color) 80%, transparent)',
             whiteSpace: 'pre',
-            fontFamily: 'monospace',
+            fontFamily: 'var(--font-mono)',
             fontSize: 'clamp(0.7rem, 2.6vw, 0.85rem)',
             zIndex: 999999,
-            border: '1px solid rgba(255,255,255,0.2)',
+            border: '1px solid var(--tooltip-bg)',
             pointerEvents: 'none',
             textAlign: 'left',
           }}

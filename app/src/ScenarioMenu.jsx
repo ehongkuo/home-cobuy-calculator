@@ -43,14 +43,11 @@ export default function ScenarioMenu({ inputs, onLoad, onReset }) {
 
   return (
     <div className="scenario-menu" role="group" aria-label="Scenario">
-      <button type="button" className="scenario-btn" onClick={copyLink} title="Copy a link to this exact scenario">
-        <Link2 size={13} /> Share
+      <button type="button" className="scenario-btn" onClick={() => fileRef.current?.click()} title="Load a scenario JSON file">
+        <Upload size={15} aria-hidden="true" /> <span className="scenario-btn-text">Import</span>
       </button>
       <button type="button" className="scenario-btn" onClick={exportJson} title="Download the scenario as JSON">
-        <Download size={13} /> Export
-      </button>
-      <button type="button" className="scenario-btn" onClick={() => fileRef.current?.click()} title="Load a scenario JSON file">
-        <Upload size={13} /> Import
+        <Download size={15} aria-hidden="true" /> <span className="scenario-btn-text">Export</span>
       </button>
       <button
         type="button"
@@ -59,7 +56,10 @@ export default function ScenarioMenu({ inputs, onLoad, onReset }) {
         title="Reset to the example scenario"
         aria-label="Reset scenario"
       >
-        <RotateCcw size={13} />
+        <RotateCcw size={15} aria-hidden="true" />
+      </button>
+      <button type="button" className="scenario-btn is-primary" onClick={copyLink} title="Copy a link to this exact scenario">
+        <Link2 size={15} aria-hidden="true" /> <span className="scenario-btn-text">Share link</span>
       </button>
       <input
         ref={fileRef}
