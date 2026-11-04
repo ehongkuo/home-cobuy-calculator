@@ -1,91 +1,41 @@
-import React, { useState } from "react";
-import { Info, Home, Receipt, Wallet, TrendingUp, PiggyBank, ChevronDown } from "lucide-react";
-import { FLOW_COLORS, formatCurrency } from "./utils";
+import React from "react";
+import { Info } from "lucide-react";
+import { formatCurrency } from "./utils";
 import { buildRentFlow } from "./financialModel";
-import RentFlowSankey from "./RentFlowSankey";
-
-const SummaryRow = ({ color, label, value, muted = false }) => (
-  <div className={`rentflow-row${muted ? " is-muted" : ""}`}>
-    <span className="rentflow-dot" style={{ background: color }} />
-    <span>{label}</span>
-    <strong>{formatCurrency(value)}</strong>
-  </div>
-);
 
 const pct = (share) => `${Number((share * 100).toFixed(2))}%`;
 
 // Annual exclusion if a married couple gifts to two recipients (2 × 2 × $19k).
 const GIFT_EXCLUSION_LIMIT = 76000;
 
-const BreakdownRow = ({ icon: Icon, label, value, isNested = false, color = "var(--text-primary)" }) => (
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: isNested ? "6px 0 6px 20px" : "10px 0",
-      borderLeft: isNested ? "2px solid rgba(255,255,255,0.1)" : "none",
-      marginLeft: isNested ? "10px" : "0",
-      borderBottom: !isNested ? "1px solid rgba(255,255,255,0.05)" : "none",
-      fontSize: isNested ? "0.85rem" : "0.95rem",
-      color: isNested ? "var(--text-muted)" : "var(--text-primary)",
-    }}
-  >
-    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-      {Icon && <Icon size={isNested ? 14 : 16} style={{ color: isNested ? "var(--text-muted)" : color }} />}
-      <span style={{ fontWeight: isNested ? 400 : 500 }}>{label}</span>
-    </div>
-    <span style={{ fontWeight: 600, color: value.startsWith("-") ? "var(--negative)" : (value.startsWith("+") ? "var(--positive)" : color), fontFamily: "monospace", fontSize: isNested ? "0.9rem" : "1rem" }}>
-      {value}
-    </span>
-  </div>
-);
+// Payment components, darkest first so the bar reads without color.
+const COST_COLORS = {
+  interest: "var(--series-1)",
+  hoa: "var(--series-2)",
+  propertyTax: "var(--series-3)",
+  opex: "var(--series-5)",
+  principal: "var(--series-4)",
+};
+const COST_ORDER = ["interest", "hoa", "propertyTax", "opex", "principal"];
 
-// One owner's monthly net. On phones the breakdown collapses behind the header.
-function OwnerCard({ owner, isRental, includeTaxSavings }) {
-  const [open, setOpen] = useState(false);
-  const share = pct(owner.share);
+// A single stacked bar with a legend underneath.
+function StackedBar({ label, parts, total }) {
   return (
-    <div className={`card hover-card owner-card${owner.isYou ? " is-you" : ""}${open ? " is-open" : ""}`}>
-      <button
-        type="button"
-        className="owner-card-head"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className="owner-card-title">
-          <span className="rentflow-dot" style={{ background: owner.color }} />
-          {owner.name} ({share})
-        </span>
-        <span className={`owner-card-net${owner.net >= 0 ? " is-positive" : ""}`}>
-          {formatCurrency(owner.net)}
-          <span className="owner-card-unit">/mo</span>
-        </span>
-        <ChevronDown size={18} className="owner-card-chevron" aria-hidden="true" />
-      </button>
-      <div className="owner-card-body">
-        <BreakdownRow icon={Home} label="Property Costs" value={`-${formatCurrency(owner.expenses)}`} />
-        <BreakdownRow label={`Mortgage (${share})`} value={`-${formatCurrency(owner.split.mortgage)}`} isNested />
-        <BreakdownRow label={`Prop Tax (${share})`} value={`-${formatCurrency(owner.split.propertyTax)}`} isNested />
-        <BreakdownRow label={`HOA (${share})`} value={`-${formatCurrency(owner.split.hoa)}`} isNested />
-        {isRental && <BreakdownRow label={`OpEx (${share})`} value={`-${formatCurrency(owner.split.opex)}`} isNested />}
-
-        {owner.rentPaid > 0 && <BreakdownRow icon={Receipt} label="Rent Paid Out" value={`-${formatCurrency(owner.rentPaid)}`} />}
-
-        <BreakdownRow icon={Wallet} label="Rent Income" value={`+${formatCurrency(owner.rentIncome)}`} color="var(--positive)" />
-
-        {includeTaxSavings && owner.title > 0 && (
-          <BreakdownRow
-            icon={TrendingUp}
-            label={owner.taxShield >= 0 ? "Tax Savings" : "Tax Cost"}
-            value={owner.taxShield > 0 ? `+${formatCurrency(owner.taxShield)}` : formatCurrency(owner.taxShield)}
-            color={owner.taxShield >= 0 ? "var(--positive)" : "var(--negative)"}
-          />
-        )}
-      </div>
+    <div
+      className="stacked-bar"
+      role="img"
+      aria-label={`${label}: ${parts.map((p) => `${p.label} ${Math.round((p.value / total) * 100)}%`).join(", ")}`}
+    >
+      {parts.map((p) => (
+        <div key={p.id} style={{ width: `${(p.value / total) * 100}%`, background: p.color }} />
+      ))}
     </div>
   );
 }
+
+const Swatch = ({ color, round = false }) => (
+  <span className={`swatch${round ? " is-round" : ""}`} style={{ background: color }} aria-hidden="true" />
+);
 
 function CashFlowTab({
   isRental,
@@ -100,6 +50,7 @@ function CashFlowTab({
   totalOperatingExpenses,
   cashToClose,
   onShowLoan,
+  rentPanel,
 }) {
   const opExMonthly = (totalOperatingExpenses || 0) / 12;
 
@@ -118,13 +69,22 @@ function CashFlowTab({
       opex: isRental ? opExMonthly : 0,
     },
   });
+  const costs = flow.nodes
+    .filter((n) => n.column === 2 && COST_COLORS[n.kind])
+    .sort((a, b) => COST_ORDER.indexOf(a.kind) - COST_ORDER.indexOf(b.kind))
+    .map((n) => ({ ...n, color: COST_COLORS[n.kind] }));
   const coverage = flow.totalCosts > 0 ? totalRent / flow.totalCosts : 1;
-  const payers = isRental
-    ? [{ id: "tenant", color: FLOW_COLORS.tenant, label: "Tenant pays", value: totalRent }]
-    : owners
-        .filter((o) => o.rent > 0)
-        .map((o) => ({ id: o.id, color: o.color, label: `${o.name} pays`, value: o.rent }));
-  const gapLabel = flow.topUp > 0 ? "Owners top up the gap" : "Surplus paid out";
+  const residents = owners.filter((o) => o.rent > 0);
+  const rentSource = isRental
+    ? "from the tenant"
+    : `from ${residents.length === 1 ? "one resident" : `${residents.length} residents`}`;
+  const gap = flow.topUp || flow.surplus;
+  const funding = [
+    { id: "rent", label: "Rent pot", value: Math.min(totalRent, flow.totalCosts), color: "var(--series-1)" },
+    { id: "topUp", label: "Owner top-up", value: flow.topUp, color: "var(--series-5)" },
+  ].filter((f) => f.value > 0.005);
+  const you = owners.find((o) => o.isYou) ?? owners[0];
+  const youLabel = you.name === "You" ? "Your" : `${you.name}'s`;
 
   // Owners off the title who cover a shortfall are effectively gifting to the others.
   const gifts = owners
@@ -133,116 +93,134 @@ function CashFlowTab({
     .filter((o) => o.annual > GIFT_EXCLUSION_LIMIT);
 
   return (
-    <div className="tab-fade-in" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-
-      {/* Total payment + rent flow */}
-      <section className="rentflow-hero">
-        <div className="rentflow-summary">
-          <div className="rentflow-eyebrow">Total Monthly Payment</div>
-          <div className="rentflow-total">
-            {formatCurrency(flow.totalCosts)}<span>/mo</span>
-          </div>
-
-          <div className="rentflow-coverage">
-            <div className="rentflow-coverage-head">
-              <span>Rent covers {Math.round(coverage * 100)}%</span>
-            </div>
-            <div className="rentflow-bar" role="presentation">
-              <div style={{ width: `${Math.min(100, coverage * 100)}%` }} />
-            </div>
-          </div>
-
-          <div className="rentflow-divider" />
-
-          <div className="rentflow-gap">
-            <div className="rentflow-gap-head">
-              <span>Rent pot</span>
-              <strong>{formatCurrency(totalRent)}</strong>
-            </div>
-            <div className="rentflow-rows">
-              {payers.map((p) => (
-                <SummaryRow key={p.id} color={p.color} label={p.label} value={p.value} muted />
-              ))}
-            </div>
-          </div>
-
-          <div className="rentflow-gap">
-            <div className="rentflow-gap-head">
-              <span>{gapLabel}</span>
-              <strong className={flow.topUp > 0 ? "is-negative" : "is-positive"}>
-                {flow.topUp > 0 ? "-" : "+"}{formatCurrency(flow.topUp || flow.surplus)}
-              </strong>
-            </div>
-            <div className="rentflow-rows">
-              {owners.filter((o) => o.share > 0).map((o) => (
-                <SummaryRow
-                  key={o.id}
-                  color={o.color}
-                  label={`${o.name} · ${pct(o.share)}`}
-                  value={(flow.topUp || flow.surplus) * o.share}
-                  muted
-                />
-              ))}
-            </div>
-          </div>
+    <div className="tab-fade-in cashflow">
+      <section className="stat-row" aria-label="Summary">
+        <div className="stat">
+          <div className="stat-label">Total monthly payment</div>
+          <div className="stat-value">{formatCurrency(flow.totalCosts)}</div>
+          <div className="stat-note">Mortgage, property tax{isRental ? ", HOA and operating costs" : " and HOA"}</div>
         </div>
-
-        <div className="rentflow-chart">
-          <div className="rentflow-chart-head">
-            <h3>Where the money goes</h3>
-            <span className="rentflow-mode">{isRental ? "Rental" : "Owner-occupied"} · monthly</span>
+        <div className="stat">
+          <div className="stat-label">Covered by rent</div>
+          <div className="stat-value">{Math.round(coverage * 100)}%</div>
+          <div className="stat-note">{formatCurrency(totalRent)} {rentSource}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-label">{flow.topUp > 0 ? "Owner top-up" : "Surplus to owners"}</div>
+          <div className="stat-value">{formatCurrency(gap)}</div>
+          <div className="stat-note">Split by equity share</div>
+        </div>
+        <div className="stat is-you">
+          <div className="stat-label">{youLabel} net per month</div>
+          <div className="stat-value">{formatCurrency(you.net)}</div>
+          <div className="stat-note">
+            {includeTaxSavings && you.taxShield
+              ? `Includes ${formatCurrency(Math.abs(you.taxShield))} tax ${you.taxShield > 0 ? "savings" : "cost"}`
+              : "Before tax effects"}
           </div>
-          <RentFlowSankey flow={flow} />
         </div>
       </section>
 
-      {/* Upfront cash */}
-      <div className="cash-strip">
-        <div className="cash-strip-title">
-          <PiggyBank size={16} /> Cash to close <strong>{formatCurrency(cashToClose.total)}</strong>
-        </div>
-        <div className="cash-strip-people">
-          {owners.map((o) => (
-            <span key={o.id} className={`cash-strip-person${o.isYou ? " cash-strip-you" : ""}`}>
-              <span>{o.name}</span> <strong>{formatCurrency(cashToClose.byPerson[o.id]?.total ?? 0)}</strong>
-            </span>
+      <div className="split-row">
+      <section className="card split-main" aria-labelledby="where-title">
+        <h2 id="where-title" className="card-header">Where the payment goes</h2>
+        <p className="card-subtitle">{formatCurrency(flow.totalCosts)} per month, {isRental ? "rental" : "owner-occupied"}</p>
+        <StackedBar label="Payment breakdown" parts={costs} total={flow.totalCosts} />
+        <table className="ledger-table">
+          <tbody>
+            {costs.map((c) => (
+              <tr key={c.id}>
+                <td><Swatch color={c.color} />{c.label}</td>
+                <td className="r muted">{Math.round((c.value / flow.totalCosts) * 100)}%</td>
+                <td className="r strong">{formatCurrency(c.value)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <h3 className="card-subheader">How it is funded</h3>
+        {funding.length > 0 && (
+          <StackedBar label="Funding" parts={funding} total={flow.totalCosts} />
+        )}
+        <div className="bar-legend">
+          {funding.map((f) => (
+            <span key={f.id}><Swatch color={f.color} />{f.label} <strong>{formatCurrency(f.value)}</strong></span>
           ))}
+          {flow.surplus > 0.005 && (
+            <span>Surplus paid out <strong className="positive">{formatCurrency(flow.surplus)}</strong></span>
+          )}
         </div>
-        <button type="button" className="cash-strip-link" onClick={onShowLoan}>
-          Details →
-        </button>
+      </section>
+      <div className="split-side">{rentPanel}</div>
       </div>
 
-      {/* Gift Tax Warning */}
       {gifts.map((o) => (
-        <div
-          key={o.id}
-          style={{
-            background: "rgba(251, 146, 60, 0.1)",
-            border: "1px solid rgba(251, 146, 60, 0.4)",
-            padding: "16px 20px",
-            borderRadius: "12px",
-            display: "flex",
-            gap: "16px",
-            alignItems: "flex-start",
-          }}
-        >
-          <Info color="#fb923c" size={24} style={{ flexShrink: 0, marginTop: "2px" }} />
+        <div key={o.id} className="notice is-warning" role="note">
+          <Info size={20} aria-hidden="true" />
           <div>
-            <h3 style={{ color: "#fb923c", margin: "0 0 6px 0", fontSize: "1.05rem" }}>Gift Tax Notice</h3>
-            <p style={{ margin: 0, color: "rgba(255,255,255,0.8)", lineHeight: 1.5, fontSize: "0.9rem" }}>
+            <h3>Gift tax notice</h3>
+            <p>
               {o.name} is not on the title and contributes a net <strong>{formatCurrency(o.annual)}</strong> a year, above the <strong>{formatCurrency(GIFT_EXCLUSION_LIMIT)}</strong> annual gift exclusion for two donors and two recipients. If that shortfall is a gift, Form 709 is required (usually no tax owed; it reduces the lifetime exemption).
             </p>
           </div>
         </div>
       ))}
 
-      {/* One card per owner */}
-      <div className="grid-3" style={{ alignItems: "stretch" }}>
-        {owners.map((o) => (
-          <OwnerCard key={o.id} owner={o} isRental={isRental} includeTaxSavings={includeTaxSavings} />
-        ))}
-      </div>
+      <section className="card is-flush" aria-labelledby="owner-flows-title">
+        <div className="card-head-row">
+          <div>
+            <h2 id="owner-flows-title" className="card-header">Each owner, per month</h2>
+            <p className="card-subtitle">Costs and rent income split by equity. Tax effects follow title share.</p>
+          </div>
+        </div>
+        <div className="table-scroll">
+          <table className="ledger-table has-head stacks-on-phone">
+            <thead>
+              <tr>
+                <th>Owner</th>
+                <th className="r">Equity</th>
+                <th className="r">Share of costs</th>
+                {residents.length > 0 && !isRental && <th className="r">Rent paid</th>}
+                <th className="r">Rent income</th>
+                {includeTaxSavings && <th className="r">Tax effect</th>}
+                <th className="r">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              {owners.map((o) => (
+                <tr key={o.id} className={o.isYou ? "is-you" : undefined}>
+                  <td>
+                    <Swatch color={o.color} round />
+                    {o.isYou ? <strong>{o.name}</strong> : o.name}
+                    <span className="muted"> · {o.rent > 0 ? "resident" : "does not live there"}</span>
+                  </td>
+                  <td className="r" data-label="Equity">{pct(o.share)}</td>
+                  <td className="r" data-label="Share of costs">{formatCurrency(-o.expenses)}</td>
+                  {residents.length > 0 && !isRental && (
+                    <td className="r" data-label="Rent paid">{o.rentPaid > 0 ? formatCurrency(-o.rentPaid) : "—"}</td>
+                  )}
+                  <td className="r" data-label="Rent income">{formatCurrency(o.rentIncome)}</td>
+                  {includeTaxSavings && (
+                    <td className="r" data-label="Tax effect">{o.title > 0 && o.taxShield ? formatCurrency(o.taxShield) : "—"}</td>
+                  )}
+                  <td className={`r strong${o.net >= 0 ? " positive" : ""}`} data-label="Net">{formatCurrency(o.net)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="card-foot">
+          <span>
+            <strong>Cash to close {formatCurrency(cashToClose.total)}</strong>
+            <span className="muted">
+              {owners.map((o) => ` · ${o.name} ${formatCurrency(cashToClose.byPerson[o.id]?.total ?? 0)}`).join("")}
+            </span>
+          </span>
+          <button type="button" className="link-btn" onClick={onShowLoan}>
+            See loan details
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

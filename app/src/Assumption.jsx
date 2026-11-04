@@ -81,9 +81,9 @@ export function AssumptionSlider({
   return (
     <div className="assumption">
       <div className="assumption-head">
-        <label htmlFor={id} className="assumption-label" title={hint}>
-          {Icon && <Icon size={14} />}
+        <label htmlFor={id} className="assumption-label">
           {label}
+          {hint && <span className="assumption-hint">{hint}</span>}
         </label>
         <div className="assumption-input">
           {prefix && <span>{prefix}</span>}

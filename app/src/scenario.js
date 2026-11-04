@@ -2,15 +2,24 @@
 // assumptions. It round-trips through the URL hash and JSON export/import.
 
 export const MAX_OWNERS = 5;
-export const OWNER_COLORS = ["#818cf8", "#c084fc", "#2dd4bf", "#a3e635", "#fda4af"];
+export const OWNER_COLORS = ["#2E8B5E", "#C98A3C", "#5E7DA8", "#B5594B", "#7A8794"];
+
+// Colors from the earlier neon palette, so older shared links match the new look.
+const LEGACY_COLORS = {
+  "#818cf8": "#2E8B5E",
+  "#c084fc": "#C98A3C",
+  "#2dd4bf": "#5E7DA8",
+  "#a3e635": "#B5594B",
+  "#fda4af": "#7A8794",
+};
 
 // equity: % of costs, rent income and upfront cash.
 // title: % of the deed and loan, which drives tax deductions.
 // rent: what they pay into the rent pot while living there (0 = not a resident).
 export const DEFAULT_OWNERS = [
-  { id: "investor", name: "Investor", equity: 50, title: 0, rent: 0, color: "#2dd4bf" },
-  { id: "you", name: "You", equity: 25, title: 50, rent: 3200, color: "#818cf8", isYou: true },
-  { id: "coOwner", name: "Co-owner", equity: 25, title: 50, rent: 3000, color: "#c084fc" },
+  { id: "investor", name: "Investor", equity: 50, title: 0, rent: 0, color: "#5E7DA8" },
+  { id: "you", name: "You", equity: 25, title: 50, rent: 3200, color: "#2E8B5E", isYou: true },
+  { id: "coOwner", name: "Co-owner", equity: 25, title: 50, rent: 3000, color: "#C98A3C" },
 ];
 
 export const DEFAULT_INPUTS = {
@@ -72,7 +81,9 @@ function normalizeOwners(raw) {
       equity: clamp(finite(item.equity, 0), 0, 100),
       title: clamp(finite(item.title, 0), 0, 100),
       rent: clamp(finite(item.rent, 0), 0, 100000),
-      color: typeof item.color === "string" && /^#[0-9a-f]{6}$/i.test(item.color) ? item.color : base.color,
+      color: typeof item.color === "string" && /^#[0-9a-f]{6}$/i.test(item.color)
+        ? LEGACY_COLORS[item.color.toLowerCase()] ?? item.color
+        : base.color,
       ...(item.isYou ? { isYou: true } : {}),
     });
   }

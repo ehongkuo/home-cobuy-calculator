@@ -1,22 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Home,
-  DollarSign,
-  Building,
-  Calculator,
-  TrendingUp,
-  Scale,
-  Clock,
-  Sliders,
-  User,
-  Users,
-  Wrench,
-  Percent,
-  Activity,
-  Landmark,
-  ArrowLeftRight,
-  PiggyBank,
-} from "lucide-react";
+import { FileText, Landmark, Scale, TrendingUp, Wallet } from "lucide-react";
 import CashFlowTab from "./CashFlowTab";
 import LoanTab from "./LoanTab";
 import TaxTab from "./TaxTab";
@@ -44,11 +27,11 @@ import OwnersPanel from "./OwnersPanel";
 import ScenarioMenu from "./ScenarioMenu";
 
 const TAB_CONFIG = [
-  { id: "cashflow", icon: DollarSign, label: "Cash Flow" },
-  { id: "loan", icon: Building, label: "Loan" },
-  { id: "taxes", icon: Calculator, label: "Taxes" },
-  { id: "longterm", icon: TrendingUp, label: "Long-Term" },
-  { id: "opportunity", icon: Scale, label: "Buy vs Rent" },
+  { id: "cashflow", icon: Wallet, label: "Cash flow", title: "Monthly cash flow" },
+  { id: "loan", icon: Landmark, label: "Loan", title: "Loan details" },
+  { id: "taxes", icon: FileText, label: "Taxes", title: "Tax implications" },
+  { id: "longterm", icon: TrendingUp, label: "Long-term", title: "Long-term equity" },
+  { id: "opportunity", icon: Scale, label: "Buy vs rent", title: "Buy vs rent" },
 ];
 
 const loadInputs = () =>
@@ -302,138 +285,130 @@ function App() {
   // Section 121: each owner on title who lived there gets their own exclusion.
   const exclusionOwners = owners.filter((o) => o.title > 0 && o.rent > 0).length;
 
+  const activeLabel = TAB_CONFIG.find((t) => t.id === activeTab).title;
+
   return (
     <div className="app-layout">
-      {/* ─── SIDEBAR ─── */}
-      <nav className="sidebar" aria-label="Financial model views">
-        <div className="sidebar-logo">
-          <Home size={22} />
-        </div>
-        {TAB_CONFIG.map(({ id, icon: Icon, label }) => (
-          <button
-            key={id}
-            className={`sidebar-btn ${activeTab === id ? "active" : ""}`}
-            onClick={() => setActiveTab(id)}
-            title={label}
-            aria-current={activeTab === id ? "page" : undefined}
-          >
-            <Icon size={20} />
-            <span className="sidebar-label">{label}</span>
-          </button>
-        ))}
-      </nav>
-
-      {/* ─── TOP BAR ─── */}
-      <header className={`topbar ${assumptionsOpen ? "assumptions-open" : ""}`}>
-        <div className="topbar-row">
-          <h1 className="topbar-title">Real Estate Co-Buy Calculator</h1>
-
-          <div className="year-control">
-            <label htmlFor="projection-year" className="year-control-label">
-              <Clock size={14} /> Year <strong>{selectedYear}</strong>
-            </label>
-            <input
-              id="projection-year"
-              type="range"
-              min={1}
-              max={30}
-              step={1}
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="assumption-range"
-              style={{ "--fill": `${((selectedYear - 1) / 29) * 100}%` }}
-              aria-label="Projection year"
-            />
+      <header className="app-header">
+        <div className="app-header-row">
+          <div className="brand">
+            <svg className="brand-mark" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+              <rect width="32" height="32" rx="6" />
+              <path d="M8 15.5 16 9l8 6.5V24h-5.5v-5h-5v5H8z" />
+            </svg>
+            <div>
+              <p className="brand-name">Co-Buy Calculator</p>
+              <p className="brand-tag">Shared home purchase model</p>
+            </div>
           </div>
+          <ScenarioMenu
+            inputs={inputs}
+            onLoad={(next) => setInputs(normalizeInputs(next))}
+            onReset={() => setInputs(normalizeInputs(DEFAULT_INPUTS))}
+          />
+        </div>
 
-          <div className="topbar-status">
-            <button
-              type="button"
-              className={`topbar-badge occupancy-toggle ${isRental ? "badge-purple" : "badge-blue"}`}
-              onClick={toggleOccupancy}
-              aria-pressed={isRental}
-              title={
-                isRental
-                  ? "Viewing as a rental property. Click to view as owner-occupied."
-                  : "Viewing as owner-occupied. Click to view as a rental property."
-              }
-            >
-              <ArrowLeftRight size={12} />
-              {isRental ? "Rental" : "Owner"}
-            </button>
-            <label className={`topbar-badge tax-toggle ${includeTaxSavings ? "is-on" : ""}`}>
+        <div className="app-header-row app-subbar">
+          <nav className="tabs" aria-label="Sections">
+            {TAB_CONFIG.map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                type="button"
+                className={`tab ${activeTab === id ? "active" : ""}`}
+                onClick={() => setActiveTab(id)}
+                aria-current={activeTab === id ? "page" : undefined}
+              >
+                <Icon size={20} aria-hidden="true" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="view-controls">
+            <div className="segmented" role="group" aria-label="View">
+              <button type="button" aria-pressed={!isRental} onClick={() => isRental && toggleOccupancy()}>
+                Owner-occupied
+              </button>
+              <button type="button" aria-pressed={isRental} onClick={() => !isRental && toggleOccupancy()}>
+                Rental
+              </button>
+            </div>
+            <label className="check">
               <input
                 type="checkbox"
                 checked={includeTaxSavings}
                 onChange={(e) => setIncludeTaxSavings(e.target.checked)}
               />
-              Tax Savings
+              Include tax savings
             </label>
-            <ScenarioMenu
-              inputs={inputs}
-              onLoad={(next) => setInputs(normalizeInputs(next))}
-              onReset={() => setInputs(normalizeInputs(DEFAULT_INPUTS))}
-            />
-            <span className={`topbar-badge net-badge ${userNet >= 0 ? "badge-green" : "badge-red"}`}>
-              <span className="net-label-long">{you.name === "You" ? "Your" : `${you.name}'s`} net:</span>
-              <span className="net-label-short">Net</span> {formatCurrency(userNet)}/mo
-            </span>
+            <div className="year-control">
+              <label htmlFor="projection-year">
+                Year <strong>{selectedYear}</strong>
+              </label>
+              <input
+                id="projection-year"
+                type="range"
+                min={1}
+                max={30}
+                step={1}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="assumption-range"
+                style={{ "--fill": `${((selectedYear - 1) / 29) * 100}%` }}
+                aria-label="Projection year"
+              />
+            </div>
           </div>
-
-          <button
-            type="button"
-            className="mobile-assumptions-toggle"
-            aria-expanded={assumptionsOpen}
-            aria-controls="global-assumptions"
-            onClick={() => setAssumptionsOpen((open) => !open)}
-          >
-            <Sliders size={16} /> Deal terms
-          </button>
-        </div>
-
-        <div id="global-assumptions" className="global-assumptions">
-          <AssumptionSlider icon={Home} label="Price" value={purchasePrice} setValue={setPurchasePrice} min={100000} max={5000000} step={5000} />
-          <AssumptionSlider icon={PiggyBank} label="Down" value={downPaymentPercent} setValue={setDownPaymentPercent} min={10} max={50} step={5} format="percentage" />
-          <AssumptionSlider icon={Percent} label="Rate" value={interestRate} setValue={setInterestRate} min={4} max={8} step={0.125} format="percentage" />
-          <AssumptionSlider icon={Building} label="HOA" value={baseHOA} setValue={setBaseHOA} min={0} max={3000} step={10} format="currency/mo" />
-          <AssumptionSlider icon={Landmark} label="Prop. Tax" value={propertyTaxRate} setValue={setPropertyTaxRate} min={0.5} max={2} step={0.01} format="percentage" />
-          <AssumptionSlider icon={Clock} label="Move Out" value={moveOutYear} setValue={setMoveOutYear} min={2} max={10} step={1} format="years" />
         </div>
       </header>
 
-      {/* ─── MAIN CONTENT ─── */}
       <main className="main-content" id="main-content" ref={mainRef}>
-        <h2 className="tab-page-title">
-          {activeTab === "cashflow" && "Monthly Cash Flow"}
-          {activeTab === "loan" && "Loan Details"}
-          {activeTab === "taxes" && "Tax Implications"}
-          {activeTab === "longterm" && "Long-Term Equity"}
-          {activeTab === "opportunity" && "Opportunity Cost"}
-        </h2>
+        <div className="page">
+          <section
+            id="global-assumptions"
+            className={`deal-terms ${assumptionsOpen ? "is-open" : ""}`}
+            aria-labelledby="deal-terms-title"
+          >
+            <div className="deal-terms-head">
+              <h2 id="deal-terms-title">Deal terms</h2>
+              <span className="deal-terms-note">Applies to every tab</span>
+              <button
+                type="button"
+                className="deal-terms-toggle"
+                aria-expanded={assumptionsOpen}
+                aria-controls="deal-terms-grid"
+                onClick={() => setAssumptionsOpen((open) => !open)}
+              >
+                <span className="deal-terms-summary">
+                  {formatCurrency(purchasePrice)} · {interestRate}%
+                </span>
+                {assumptionsOpen ? "Done" : "Edit"}
+              </button>
+            </div>
+            <div id="deal-terms-grid" className="deal-terms-grid">
+              <AssumptionSlider label="Purchase price" value={purchasePrice} setValue={setPurchasePrice} min={100000} max={5000000} step={5000} />
+              <AssumptionSlider label="Down payment" value={downPaymentPercent} setValue={setDownPaymentPercent} min={10} max={50} step={5} format="percentage" />
+              <AssumptionSlider label="Interest rate" value={interestRate} setValue={setInterestRate} min={4} max={8} step={0.125} format="percentage" />
+              <AssumptionSlider label="HOA" value={baseHOA} setValue={setBaseHOA} min={0} max={3000} step={10} format="currency/mo" />
+              <AssumptionSlider label="Property tax rate" value={propertyTaxRate} setValue={setPropertyTaxRate} min={0.5} max={2} step={0.01} format="percentage" />
+              <AssumptionSlider label="Move-out year" value={moveOutYear} setValue={setMoveOutYear} min={2} max={10} step={1} format="years" />
+            </div>
+          </section>
+
+          <div className="page-head">
+            <h1 className="tab-page-title">{activeLabel}</h1>
+            <p className="page-subtitle">
+              Year {selectedYear} · {isRental ? "Rental" : "Owner-occupied"} ·{" "}
+              {includeTaxSavings ? "With" : "Without"} tax savings ·{" "}
+              <strong>
+                {you.name === "You" ? "Your" : `${you.name}'s`} net {formatCurrency(userNet)}/mo
+              </strong>
+            </p>
+          </div>
+
         {activeTab === "cashflow" && (
           <>
           <OwnersPanel owners={owners} setOwners={setOwners} />
-          <AssumptionPanel title="Rent" note={isRental ? "Rental view: tenant rent applies" : "Owner-occupied view: residents' rent applies"}>
-              {owners
-                .filter((o) => o.rent > 0)
-                .map((o) => (
-                  <AssumptionSlider
-                    key={o.id}
-                    icon={User}
-                    label={o.isYou && o.name === "You" ? "Your Rent" : `${o.name}'s Rent`}
-                    hint="owner view"
-                    value={o.rent}
-                    setValue={(rent) => setOwners((list) => list.map((x) => (x.id === o.id ? { ...x, rent } : x)))}
-                    min={500}
-                    max={10000}
-                    step={50}
-                    format="currency/mo"
-                  />
-                ))}
-              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental view" value={tenantRent} setValue={setTenantRent} min={1000} max={20000} step={100} format="currency/mo" />
-              <AssumptionSlider icon={Wrench} label="Operating Expenses" hint="% of price / yr" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
-              <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
-          </AssumptionPanel>
           <CashFlowTab
             isRental={isRental}
             owners={ownerFlows}
@@ -447,6 +422,28 @@ function App() {
             totalOperatingExpenses={totalOperatingExpenses}
             cashToClose={cashToClose}
             onShowLoan={() => setActiveTab("loan")}
+            rentPanel={
+          <AssumptionPanel title="Rent" note={isRental ? "Tenant rent applies" : "Residents' rent applies"}>
+              {owners
+                .filter((o) => o.rent > 0)
+                .map((o) => (
+                  <AssumptionSlider
+                    key={o.id}
+                    label={o.isYou && o.name === "You" ? "Your rent" : `${o.name}'s rent`}
+                    hint="while living there"
+                    value={o.rent}
+                    setValue={(rent) => setOwners((list) => list.map((x) => (x.id === o.id ? { ...x, rent } : x)))}
+                    min={500}
+                    max={10000}
+                    step={50}
+                    format="currency/mo"
+                  />
+                ))}
+              <AssumptionSlider label="Tenant rent" hint="rental years" value={tenantRent} setValue={setTenantRent} min={1000} max={20000} step={100} format="currency/mo" />
+              <AssumptionSlider label="Operating costs" hint="% of price a year" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
+              <AssumptionSlider label="Rent growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
+          </AssumptionPanel>
+            }
           />
           </>
         )}
@@ -471,10 +468,10 @@ function App() {
 
         {activeTab === "taxes" && (
           <>
-          <AssumptionPanel title="Rental Inputs" note="Used in the rental view; tax brackets live in TAX_ASSUMPTIONS">
-              <AssumptionSlider icon={Users} label="Tenant Rent" hint="rental view" value={tenantRent} setValue={setTenantRent} min={1000} max={20000} step={100} format="currency/mo" />
-              <AssumptionSlider icon={Wrench} label="Operating Expenses" hint="% of price / yr" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
-              <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
+          <AssumptionPanel title="Rental inputs" note="Used in rental years">
+              <AssumptionSlider label="Tenant rent" hint="rental years" value={tenantRent} setValue={setTenantRent} min={1000} max={20000} step={100} format="currency/mo" />
+              <AssumptionSlider label="Operating costs" hint="% of price a year" value={operatingExpenseRate} setValue={setOperatingExpenseRate} min={0} max={5} step={0.1} format="percentage" />
+              <AssumptionSlider label="Rent growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
           </AssumptionPanel>
           <TaxTab
             isRental={isRental}
@@ -511,8 +508,8 @@ function App() {
         {activeTab === "longterm" && (
           <>
           <AssumptionPanel title="Growth">
-              <AssumptionSlider icon={TrendingUp} label="Appreciation" hint="per year" value={appreciation} setValue={setAppreciation} min={0} max={10} step={0.5} format="percentage" />
-              <AssumptionSlider icon={Activity} label="HOA Growth" hint="per year" value={hoaInflation} setValue={setHoaInflation} min={1} max={10} step={0.5} format="percentage" />
+              <AssumptionSlider label="Appreciation" hint="per year" value={appreciation} setValue={setAppreciation} min={0} max={10} step={0.5} format="percentage" />
+              <AssumptionSlider label="HOA growth" hint="per year" value={hoaInflation} setValue={setHoaInflation} min={1} max={10} step={0.5} format="percentage" />
           </AssumptionPanel>
           <LongTermTab
             selectedYear={selectedYear}
@@ -530,13 +527,13 @@ function App() {
 
         {activeTab === "opportunity" && (
           <>
-          <AssumptionPanel title="Your Budget & Markets">
-              <AssumptionSlider icon={DollarSign} label="Take-Home Pay" value={takeHome} setValue={setTakeHome} min={2000} max={15000} step={100} format="currency/mo" />
-              <AssumptionSlider icon={DollarSign} label="Non-Housing Expenses" value={nonHousingExpenses} setValue={setNonHousingExpenses} min={500} max={8000} step={100} format="currency/mo" />
-              <AssumptionSlider icon={Home} label="Equivalent Rent" hint="if you rented instead" value={equivalentRent} setValue={setEquivalentRent} min={500} max={10000} step={50} format="currency/mo" />
-              <AssumptionSlider icon={TrendingUp} label="Rent Growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
-              <AssumptionSlider icon={TrendingUp} label="S&P 500 Return" hint="per year" value={stockMarketReturn} setValue={setStockMarketReturn} min={0} max={15} step={0.5} format="percentage" />
-              <AssumptionSlider icon={TrendingUp} label="Appreciation" hint="per year" value={appreciation} setValue={setAppreciation} min={0} max={10} step={0.5} format="percentage" />
+          <AssumptionPanel title="Budget and markets">
+              <AssumptionSlider label="Take-home pay" value={takeHome} setValue={setTakeHome} min={2000} max={15000} step={100} format="currency/mo" />
+              <AssumptionSlider label="Non-housing expenses" value={nonHousingExpenses} setValue={setNonHousingExpenses} min={500} max={8000} step={100} format="currency/mo" />
+              <AssumptionSlider label="Equivalent rent" hint="if you rented instead" value={equivalentRent} setValue={setEquivalentRent} min={500} max={10000} step={50} format="currency/mo" />
+              <AssumptionSlider label="Rent growth" hint="per year" value={rentInflation} setValue={setRentInflation} min={0} max={10} step={0.5} format="percentage" />
+              <AssumptionSlider label="S&P 500 return" hint="per year" value={stockMarketReturn} setValue={setStockMarketReturn} min={0} max={15} step={0.5} format="percentage" />
+              <AssumptionSlider label="Appreciation" hint="per year" value={appreciation} setValue={setAppreciation} min={0} max={10} step={0.5} format="percentage" />
           </AssumptionPanel>
           <OpportunityCostTab
             purchasePrice={purchasePrice}
@@ -564,6 +561,7 @@ function App() {
           />
           </>
         )}
+        </div>
       </main>
     </div>
   );

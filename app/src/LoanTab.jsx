@@ -21,20 +21,20 @@ function LoanTab({
     <div className="tab-fade-in">
       <div className="card" style={{ marginBottom: "16px" }}>
         <h2>
-          <PiggyBank className="icon" /> Cash Needed Up Front
+          <PiggyBank className="icon" /> Cash needed up front
         </h2>
         <div className="cash-to-close">
           <div className="cash-to-close-totals">
             <div className="math-step">
-              <span className="math-label">Down Payment ({downPaymentPercent}%):</span>
+              <span className="math-label">Down payment ({downPaymentPercent}%):</span>
               <span className="math-value">{formatCurrency(cashToClose.downPayment)}</span>
             </div>
             <div className="math-step">
-              <span className="math-label">Closing Costs (~2%):</span>
+              <span className="math-label">Closing costs (~2%)</span>
               <span className="math-value">{formatCurrency(cashToClose.closingCosts)}</span>
             </div>
             <div className="math-step total-math">
-              <span className="math-label">Total Cash to Close:</span>
+              <span className="math-label">Total cash to close</span>
               <span className="math-value highlight-large">{formatCurrency(cashToClose.total)}</span>
             </div>
           </div>
@@ -58,32 +58,32 @@ function LoanTab({
       </div>
       <div className="grid">
         <div className="card">
-          <h2>How Payments Are Derived</h2>
+          <h2>How the payment is derived</h2>
           <div className="math-breakdown">
             <div className="math-step">
-              <span className="math-label">1. Loan Amount:</span>
+              <span className="math-label">1. Loan amount</span>
               <span className="math-value">
                 {formatCurrency(purchasePrice)} - {downPaymentPercent}% ={" "}
                 {formatCurrency(loanAmount)}
               </span>
             </div>
             <div className="math-step">
-              <span className="math-label">2. Monthly Mortgage:</span>
+              <span className="math-label">2. Monthly mortgage</span>
               <span className="math-value highlight">
                 {formatCurrency(mortgage)}
               </span>
             </div>
             <hr />
             <div className="math-step">
-              <span className="math-label">Property Tax ({propertyTaxRate}%, Year {selectedYear}):</span>
+              <span className="math-label">Property tax ({propertyTaxRate}%, year {selectedYear})</span>
               <span className="math-value">{formatCurrency(propertyTax)}</span>
             </div>
             <div className="math-step">
-              <span className="math-label">HOA (Year {selectedYear}):</span>
+              <span className="math-label">HOA (year {selectedYear})</span>
               <span className="math-value">{formatCurrency(hoa)}</span>
             </div>
             <div className="math-step total-math">
-              <span className="math-label">Total Monthly Cost (Year {selectedYear}):</span>
+              <span className="math-label">Total monthly cost (year {selectedYear})</span>
               <span className="math-value highlight-large">
                 {formatCurrency(propertyCosts)}
               </span>
@@ -92,7 +92,7 @@ function LoanTab({
         </div>
         <div className="card amortization-card" style={{ marginTop: 0 }}>
           <h2>
-            <CalendarDays className="icon" /> {loanTermYears}-Year Amortization
+            <CalendarDays className="icon" /> {loanTermYears}-year amortization
           </h2>
           <div className="table-wrapper">
             <table className="amort-table">
@@ -111,12 +111,12 @@ function LoanTab({
                     style={{
                       background:
                         row.year === selectedYear
-                          ? "rgba(96, 165, 250, 0.2)"
+                          ? "color-mix(in srgb, var(--info) 20%, transparent)"
                           : "transparent",
                     }}
                   >
                     <td>
-                      Year {row.year} {row.year === selectedYear && "👈"}
+                      Year {row.year}
                     </td>
                     <td className="positive">
                       {formatCurrency(row.principal)}

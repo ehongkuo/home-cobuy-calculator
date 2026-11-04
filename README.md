@@ -23,10 +23,10 @@ It works on a phone or a computer. Your inputs live in the page's link, never on
 ## How to use it
 
 1. **Set up the owners:** on the Cash Flow tab, tap **Edit** on the Owners row. Enter names, equity % and title %, check who lives there and which one is you, then tap **Done**. Each resident's rent gets its own slider in the Rent panel.
-2. **Set the deal terms:** price, down payment, interest rate, HOA, property tax and the year you plan to move out. On a phone, tap **Deal terms** at the top.
+2. **Set the deal terms:** price, down payment, interest rate, HOA, property tax and the year you plan to move out. On a phone, tap **Edit** on the Deal terms row.
 3. **Pick a year** with the **Year** slider. Every tab shows that year's numbers.
-4. **Switch between Owner and Rental** to compare living there with renting it out.
-5. **Turn Tax Savings on or off** to see the numbers with or without tax deductions.
+4. **Switch between Owner-occupied and Rental** to compare living there with renting it out.
+5. **Check or uncheck Include tax savings** to see the numbers with or without tax deductions.
 6. **Fill in the inputs on each tab:** rents, growth rates, your budget. On a phone, tap a value to open a scroll wheel.
 7. **Hover over (or tap) any dotted-underlined number** to see how it was calculated.
 8. **Save or send it** with **Share** (copy a link), **Export** (download a file) or **Import**. The reset button brings back the example.
@@ -73,9 +73,9 @@ The Cash Flow tab also warns you if an owner who isn't on the title contributes 
 
 ### Tabs in detail
 
-The **Year** slider drives every tab. The **Owner / Rental** toggle switches Cash Flow and Taxes between views. Long-Term and Buy vs Rent follow the **Move Out** year as a timeline. **Tax Savings** turns the tax shield on or off everywhere.
+The **Year** slider drives every tab. The **Owner-occupied / Rental** switch changes Cash Flow and Taxes between views. Long-Term and Buy vs Rent follow the **Move-out year** as a timeline. **Include tax savings** turns the tax shield on or off everywhere.
 
-- **Cash Flow:** the Owners setup (collapses to a summary row), per-resident rent sliders, total payment, rent-pot coverage, and the gap or surplus split by equity. Includes a Sankey chart and each owner's net.
+- **Cash Flow:** the Owners setup (collapses to a summary row), per-resident rent sliders, total payment, rent-pot coverage, and the gap or surplus split by equity. Stacked bars show where the payment goes and how it is funded, and a table shows each owner's net.
 - **Loan:** how the payment is derived, plus the 30-year amortization schedule.
 - **Taxes:** Schedule A in owner years (SALT cap, $750k debt limit, standard deduction). The LLC K-1 view in rental years (depreciation, operating expenses, REPS) and depreciation recapture.
 - **Long-Term:** value, equity, HOA growth and the Section 121 exclusion window.

@@ -7,15 +7,15 @@ const { w2Income, caStateTax, saltCap, standardDeduction, mortgageDebtLimit } =
   TAX_ASSUMPTIONS;
 
 function CapCheck({ ok, title, children }) {
-  const color = ok ? "#4ade80" : "#fb923c";
+  const color = ok ? "var(--positive)" : "var(--warning)";
   const Icon = ok ? CheckCircle : XCircle;
   return (
     <div
       style={{
         flex: 1,
         minWidth: "260px",
-        background: ok ? "rgba(74, 222, 128, 0.05)" : "rgba(251, 146, 60, 0.08)",
-        border: `1px solid ${ok ? "rgba(74, 222, 128, 0.3)" : "rgba(251, 146, 60, 0.4)"}`,
+        background: ok ? "color-mix(in srgb, var(--positive) 5%, transparent)" : "color-mix(in srgb, var(--warning) 8%, transparent)",
+        border: `1px solid ${ok ? "color-mix(in srgb, var(--positive) 30%, transparent)" : "color-mix(in srgb, var(--warning) 40%, transparent)"}`,
         borderRadius: "12px",
         padding: "20px",
       }}
@@ -73,25 +73,25 @@ function TaxTab({
           className="card"
           style={{
             marginBottom: "24px",
-            background: "rgba(168, 85, 247, 0.08)",
-            border: "1px solid rgba(168, 85, 247, 0.3)",
+            background: "color-mix(in srgb, var(--rental) 6%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--rental) 30%, transparent)",
           }}
         >
           <div
             className="card-header"
-            style={{ fontSize: "1.3rem", color: "#a855f7" }}
+            style={{ fontSize: "1.3rem", color: "var(--rental)" }}
           >
-            🏢 LLC Partnership + Real Estate Professional Status (REPS)
+            LLC partnership with real estate professional status (REPS)
           </div>
           <div className="card-body">
-            <p style={{ color: "#e2e8f0", marginBottom: "16px" }}>
+            <p style={{ color: "var(--text-primary)", marginBottom: "16px" }}>
               This scenario models <strong>{titleHolders.length} LLC{" "}
               {titleHolders.length === 1 ? "member" : "members"}</strong>: the owners
               on title. Each member reports their title share of the rental
               income and deductions; the numbers below are your{" "}
               {(llcShare * 100).toFixed(0)}%.
             </p>
-            <p style={{ color: "#fbbf24", marginBottom: "16px" }}>
+            <p style={{ color: "var(--warning)", marginBottom: "16px" }}>
               <strong>Tax assumption:</strong> The projected W-2 offset only applies
               if the taxpayer qualifies as a real estate professional, materially
               participates in this activity, and clears the at-risk and excess
@@ -105,12 +105,12 @@ function TaxTab({
                   style={{
                     padding: "8px 16px",
                     borderRadius: "8px",
-                    background: "rgba(96, 165, 250, 0.15)",
-                    border: `1px solid ${o.id === youId ? "rgba(129, 140, 248, 0.7)" : "rgba(96, 165, 250, 0.3)"}`,
+                    background: "color-mix(in srgb, var(--info) 6%, transparent)",
+                    border: `1px solid ${o.id === youId ? "color-mix(in srgb, var(--accent) 70%, transparent)" : "color-mix(in srgb, var(--info) 30%, transparent)"}`,
                     fontSize: "0.9rem",
                   }}
                 >
-                  👤 {o.name} — {Number(o.title.toFixed(2))}% Member
+                  {o.name}, {Number(o.title.toFixed(2))}% member
                 </div>
               ))}
             </div>
@@ -123,7 +123,7 @@ function TaxTab({
             Step 1: What can the LLC deduct?
           </div>
           <div className="card-body">
-            <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>
               As a business, the LLC can deduct <strong>all</strong> ordinary
               and necessary expenses — including items that were NOT deductible
               when you lived there (HOA, depreciation, and operating costs).
@@ -131,7 +131,7 @@ function TaxTab({
             <div className="tax-item-grid">
               <div className="tax-item yes">
                 <div className="tax-item-header">
-                  <CheckCircle color="#4ade80" size={20} /> Mortgage Interest
+                  <CheckCircle color="var(--positive)" size={20} /> Mortgage interest
                 </div>
                 <div className="tax-item-amount">
                   {formatCurrency(rentalInterest / 12)} / mo (your {(llcShare * 100).toFixed(0)}%)
@@ -142,7 +142,7 @@ function TaxTab({
               </div>
               <div className="tax-item yes">
                 <div className="tax-item-header">
-                  <CheckCircle color="#4ade80" size={20} /> Property Tax
+                  <CheckCircle color="var(--positive)" size={20} /> Property tax
                 </div>
                 <div className="tax-item-amount">
                   {formatCurrency(rentalPropertyTax / 12)} / mo (your {(llcShare * 100).toFixed(0)}%)
@@ -153,10 +153,10 @@ function TaxTab({
               </div>
               <div
                 className="tax-item yes"
-                style={{ border: "1px solid rgba(74, 222, 128, 0.4)" }}
+                style={{ border: "1px solid color-mix(in srgb, var(--positive) 40%, transparent)" }}
               >
                 <div className="tax-item-header">
-                  <CheckCircle color="#4ade80" size={20} /> HOA Dues ✨
+                  <CheckCircle color="var(--positive)" size={20} /> HOA dues
                 </div>
                 <div className="tax-item-amount">
                   {formatCurrency(rentalHOA / 12)} / mo (your {(llcShare * 100).toFixed(0)}%)
@@ -168,10 +168,10 @@ function TaxTab({
               </div>
               <div
                 className="tax-item yes"
-                style={{ border: "1px solid rgba(74, 222, 128, 0.4)" }}
+                style={{ border: "1px solid color-mix(in srgb, var(--positive) 40%, transparent)" }}
               >
                 <div className="tax-item-header">
-                  <CheckCircle color="#4ade80" size={20} /> Depreciation ✨
+                  <CheckCircle color="var(--positive)" size={20} /> Depreciation
                 </div>
                 <div className="tax-item-amount">
                   {formatCurrency(userShareOfDepreciation / 12)} / mo (your {(llcShare * 100).toFixed(0)}%)
@@ -188,16 +188,16 @@ function TaxTab({
             <div style={{ marginTop: "24px" }}>
               <h3
                 style={{
-                  color: "#60a5fa",
+                  color: "var(--info)",
                   marginBottom: "16px",
                   fontSize: "1.1rem",
                 }}
               >
-                📋 Operating Expenses (Your {(llcShare * 100).toFixed(0)}% Share)
+                Operating expenses (your {(llcShare * 100).toFixed(0)}% Share)
               </h3>
               <div
                 style={{
-                  background: "rgba(0,0,0,0.3)",
+                  background: "var(--surface-sunken)", border: "1px solid var(--border)",
                   padding: "16px",
                   borderRadius: "10px",
                 }}
@@ -207,11 +207,11 @@ function TaxTab({
                     Estimated at {operatingExpenseRate.toFixed(2)}% of property
                     value:
                   </span>
-                  <span style={{ color: "#e2e8f0", fontWeight: "bold" }}>
+                  <span style={{ color: "var(--text-primary)", fontWeight: "bold" }}>
                     {formatCurrency(userShareOfOperatingExpenses)}/yr
                   </span>
                 </div>
-                <div style={{ color: "#64748b", fontSize: "0.8rem" }}>
+                <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
                   Covers cleaning, general repairs, maintenance,
                   and landlord insurance. LLC total:{" "}
                   {formatCurrency(totalOperatingExpenses)}/yr (
@@ -228,23 +228,23 @@ function TaxTab({
             Step 2: Your {(llcShare * 100).toFixed(0)}% K-1 — Annual Rental P&L (Year {selectedYear})
           </div>
           <div className="card-body">
-            <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>
               The LLC files Form 1065 and issues each member a K-1. Here's your
               {(llcShare * 100).toFixed(0)}% share:
             </p>
 
             <div
               style={{
-                background: "rgba(74, 222, 128, 0.1)",
+                background: "color-mix(in srgb, var(--positive) 6%, transparent)",
                 padding: "20px",
                 borderRadius: "12px",
-                border: "1px solid rgba(74, 222, 128, 0.3)",
+                border: "1px solid color-mix(in srgb, var(--positive) 30%, transparent)",
                 marginBottom: "16px",
               }}
             >
               <div
                 style={{
-                  color: "#4ade80",
+                  color: "var(--positive)",
                   fontWeight: "bold",
                   marginBottom: "12px",
                 }}
@@ -266,7 +266,7 @@ function TaxTab({
               style={{
                 textAlign: "center",
                 margin: "12px 0",
-                color: "#94a3b8",
+                color: "var(--text-secondary)",
                 fontSize: "1.2rem",
               }}
             >
@@ -275,32 +275,32 @@ function TaxTab({
 
             <div
               style={{
-                background: "rgba(248, 113, 113, 0.1)",
+                background: "color-mix(in srgb, var(--negative) 6%, transparent)",
                 padding: "20px",
                 borderRadius: "12px",
-                border: "1px solid rgba(248, 113, 113, 0.3)",
+                border: "1px solid color-mix(in srgb, var(--negative) 30%, transparent)",
                 marginBottom: "16px",
               }}
             >
               <div
                 style={{
-                  color: "#f87171",
+                  color: "var(--negative)",
                   fontWeight: "bold",
                   marginBottom: "12px",
                 }}
               >
-                Deductible Expenses (your {(llcShare * 100).toFixed(0)}%)
+                Deductible expenses (your {(llcShare * 100).toFixed(0)}%)
               </div>
               <div className="row">
-                <span>Mortgage Interest:</span>{" "}
+                <span>Mortgage interest</span>{" "}
                 <span>-{formatCurrency(rentalInterest)}</span>
               </div>
               <div className="row">
-                <span>Property Tax:</span>{" "}
+                <span>Property tax</span>{" "}
                 <span>-{formatCurrency(rentalPropertyTax)}</span>
               </div>
               <div className="row">
-                <span>HOA Dues:</span> <span>-{formatCurrency(rentalHOA)}</span>
+                <span>HOA dues</span> <span>-{formatCurrency(rentalHOA)}</span>
               </div>
               <div className="row">
                 <span>
@@ -310,12 +310,12 @@ function TaxTab({
                 <span>-{formatCurrency(userShareOfDepreciation)}</span>
               </div>
               <div className="row">
-                <span>Operating Expenses:</span>{" "}
+                <span>Operating expenses</span>{" "}
                 <span>-{formatCurrency(userShareOfOperatingExpenses)}</span>
               </div>
               <hr style={{ opacity: 0.2 }} />
               <div className="row total">
-                <span>Total Deductions:</span>{" "}
+                <span>Total deductions</span>{" "}
                 <span className="negative">
                   -{formatCurrency(totalRentalDeductions)}
                 </span>
@@ -323,31 +323,31 @@ function TaxTab({
             </div>
 
             <div style={{ textAlign: "center", margin: "12px 0" }}>
-              <ArrowDown color="#a855f7" size={32} />
+              <ArrowDown color="var(--rental)" size={32} />
             </div>
 
             <div
               style={{
                 background:
                   netRentalIncome >= 0
-                    ? "rgba(74, 222, 128, 0.1)"
-                    : "rgba(168, 85, 247, 0.1)",
+                    ? "color-mix(in srgb, var(--positive) 10%, transparent)"
+                    : "color-mix(in srgb, var(--rental) 10%, transparent)",
                 padding: "20px",
                 borderRadius: "12px",
-                border: `1px solid ${netRentalIncome >= 0 ? "rgba(74, 222, 128, 0.3)" : "rgba(168, 85, 247, 0.3)"}`,
+                border: `1px solid ${netRentalIncome >= 0 ? "color-mix(in srgb, var(--positive) 30%, transparent)" : "color-mix(in srgb, var(--rental) 30%, transparent)"}`,
                 marginBottom: "16px",
               }}
             >
               <div
                 style={{
-                  color: netRentalIncome >= 0 ? "#4ade80" : "#a855f7",
+                  color: netRentalIncome >= 0 ? "var(--positive)" : "var(--rental)",
                   fontWeight: "bold",
                   marginBottom: "12px",
                   fontSize: "1.1rem",
                 }}
               >
                 {netRentalIncome >= 0
-                  ? "Net Taxable Rental Income"
+                  ? "Net taxable rental income"
                   : "Net Rental Loss (Paper Loss)"}
               </div>
               <div className="row total" style={{ fontSize: "1.2rem" }}>
@@ -370,20 +370,20 @@ function TaxTab({
           <div className="card-body">
             {netRentalIncome >= 0 ? (
               <>
-                <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
+                <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>
                   Your rental made {formatCurrency(netRentalIncome)} of taxable
                   income. You'll owe taxes on this at your 24% marginal rate.
                 </p>
                 <div
                   style={{
-                    background: "rgba(0,0,0,0.3)",
+                    background: "var(--surface-sunken)", border: "1px solid var(--border)",
                     padding: "24px",
                     borderRadius: "12px",
                     marginBottom: "20px",
                   }}
                 >
                   <div className="row">
-                    <span>Net Rental Income:</span>{" "}
+                    <span>Net rental income</span>{" "}
                     <span>{formatCurrency(netRentalIncome)}</span>
                   </div>
                   <div className="row">
@@ -401,23 +401,23 @@ function TaxTab({
               </>
             ) : (
               <>
-                <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
+                <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>
                   Your rental shows a <strong>"paper loss"</strong> of{" "}
                   {formatCurrency(Math.abs(netRentalIncome))} — mostly thanks to
                   depreciation and operating expense deductions.
                 </p>
                 <div
                   style={{
-                    background: "rgba(74, 222, 128, 0.1)",
+                    background: "color-mix(in srgb, var(--positive) 6%, transparent)",
                     padding: "24px",
                     borderRadius: "12px",
-                    border: "1px solid rgba(74, 222, 128, 0.3)",
+                    border: "1px solid color-mix(in srgb, var(--positive) 30%, transparent)",
                     marginBottom: "20px",
                   }}
                 >
                   <div
                     style={{
-                      color: "#4ade80",
+                      color: "var(--positive)",
                       fontWeight: "bold",
                       marginBottom: "12px",
                       fontSize: "1.1rem",
@@ -425,23 +425,23 @@ function TaxTab({
                   >
                     Scenario: rental loss offsets W-2 income
                   </div>
-                  <p style={{ color: "#e2e8f0", margin: "0 0 16px 0" }}>
+                  <p style={{ color: "var(--text-primary)", margin: "0 0 16px 0" }}>
                     This projection assumes the REPS and material-participation
                     tests are satisfied and no other loss limitation applies. If
                     those conditions are not met, some or all of the loss may be
                     suspended instead of reducing W-2 income this year.
                   </p>
                   <div className="row">
-                    <span>Your W-2 Income:</span> <span>{formatCurrency(w2Income)}</span>
+                    <span>Your W-2 income</span> <span>{formatCurrency(w2Income)}</span>
                   </div>
                   <div className="row">
-                    <span>K-1 Rental Loss:</span>{" "}
+                    <span>K-1 rental loss</span>{" "}
                     <span className="positive">
                       -{formatCurrency(Math.abs(netRentalIncome))}
                     </span>
                   </div>
                   <div className="row total">
-                    <span>New Taxable Income:</span>{" "}
+                    <span>New taxable income</span>{" "}
                     <span>{formatCurrency(w2Income - standardDeduction + netRentalIncome)}</span>
                   </div>
                   <hr style={{ opacity: 0.2, margin: "16px 0" }} />
@@ -455,7 +455,7 @@ function TaxTab({
                     className="row total"
                     style={{ fontSize: "1.3rem", marginTop: "8px" }}
                   >
-                    <span>Monthly tax savings:</span>{" "}
+                    <span>Monthly tax savings</span>{" "}
                     <span className="positive">
                       +{formatCurrency(monthlyTaxSavingsFromLoss)} / mo
                     </span>
@@ -464,20 +464,20 @@ function TaxTab({
 
                 <div
                   style={{
-                    background: "rgba(96, 165, 250, 0.1)",
+                    background: "color-mix(in srgb, var(--info) 6%, transparent)",
                     padding: "20px",
                     borderRadius: "12px",
-                    border: "1px solid rgba(96, 165, 250, 0.3)",
+                    border: "1px solid color-mix(in srgb, var(--info) 30%, transparent)",
                   }}
                 >
                   <div
                     style={{
-                      color: "#60a5fa",
+                      color: "var(--info)",
                       fontWeight: "bold",
                       marginBottom: "8px",
                     }}
                   >
-                    📊 Cumulative Tax Savings Through Year {selectedYear}
+                    Cumulative tax savings through year {selectedYear}
                   </div>
                   <div className="row total">
                     <span>Total saved off W-2 taxes:</span>{" "}
@@ -487,7 +487,7 @@ function TaxTab({
                   </div>
                   <p
                     style={{
-                      color: "#94a3b8",
+                      color: "var(--text-secondary)",
                       fontSize: "0.85rem",
                       marginTop: "8px",
                       marginBottom: 0,
@@ -505,10 +505,10 @@ function TaxTab({
         {/* STEP 4: Compared to not buying */}
         <div className="card" style={{ marginBottom: "24px" }}>
           <div className="card-header" style={{ fontSize: "1.3rem" }}>
-            Step 4: Compared to NOT buying this property
+            Step 4: Compared with not buying
           </div>
           <div className="card-body">
-            <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
+            <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>
               Side-by-side: your tax situation with and without the LLC rental.
             </p>
             <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
@@ -516,43 +516,43 @@ function TaxTab({
                 style={{
                   flex: 1,
                   minWidth: "280px",
-                  background: "rgba(0,0,0,0.3)",
+                  background: "var(--surface-sunken)", border: "1px solid var(--border)",
                   padding: "20px",
                   borderRadius: "12px",
                 }}
               >
                 <div
                   style={{
-                    color: "#cbd5e1",
+                    color: "var(--text-secondary)",
                     fontWeight: "bold",
                     marginBottom: "12px",
                   }}
                 >
-                  Without the house:
+                  Without the house
                 </div>
                 <div className="row">
-                  <span>W2 Income:</span> <span>{formatCurrency(w2Income)}</span>
+                  <span>W-2 income</span> <span>{formatCurrency(w2Income)}</span>
                 </div>
                 <div className="row">
-                  <span>Standard Deduction:</span> <span>-{formatCurrency(standardDeduction)}</span>
+                  <span>Standard deduction</span> <span>-{formatCurrency(standardDeduction)}</span>
                 </div>
                 <div className="row total">
-                  <span>Taxable Income:</span> <span>{formatCurrency(w2Income - standardDeduction)}</span>
+                  <span>Taxable income</span> <span>{formatCurrency(w2Income - standardDeduction)}</span>
                 </div>
               </div>
               <div
                 style={{
                   flex: 1,
                   minWidth: "280px",
-                  background: "rgba(168, 85, 247, 0.1)",
+                  background: "color-mix(in srgb, var(--rental) 6%, transparent)",
                   padding: "20px",
                   borderRadius: "12px",
-                  border: "1px solid rgba(168, 85, 247, 0.3)",
+                  border: "1px solid color-mix(in srgb, var(--rental) 30%, transparent)",
                 }}
               >
                 <div
                   style={{
-                    color: "#a855f7",
+                    color: "var(--rental)",
                     fontWeight: "bold",
                     marginBottom: "12px",
                   }}
@@ -560,20 +560,20 @@ function TaxTab({
                   With the LLC rental (Year {selectedYear}):
                 </div>
                 <div className="row">
-                  <span>W2 Income:</span> <span>{formatCurrency(w2Income)}</span>
+                  <span>W-2 income</span> <span>{formatCurrency(w2Income)}</span>
                 </div>
                 <div className="row">
-                  <span>Standard Deduction:</span> <span>-{formatCurrency(standardDeduction)}</span>
+                  <span>Standard deduction</span> <span>-{formatCurrency(standardDeduction)}</span>
                 </div>
                 <div className="row">
-                  <span>K-1 Rental Net:</span>{" "}
+                  <span>K-1 rental net</span>{" "}
                   <span className={netRentalIncome >= 0 ? "" : "positive"}>
                     {formatCurrency(netRentalIncome)}
                     {netRentalIncome < 0 ? " (offsets W-2!)" : ""}
                   </span>
                 </div>
                 <div className="row total">
-                  <span>Taxable Income:</span>{" "}
+                  <span>Taxable income</span>{" "}
                   <span>
                     {formatCurrency(
                       w2Income - standardDeduction + netRentalIncome,
@@ -585,7 +585,7 @@ function TaxTab({
             <div
               style={{
                 marginTop: "16px",
-                color: "#94a3b8",
+                color: "var(--text-secondary)",
                 fontSize: "0.95rem",
               }}
             >
@@ -602,8 +602,8 @@ function TaxTab({
         {/* Depreciation recapture warning */}
         <div
           style={{
-            background: "rgba(251, 146, 60, 0.1)",
-            border: "1px solid rgba(251, 146, 60, 0.3)",
+            background: "color-mix(in srgb, var(--warning) 6%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--warning) 30%, transparent)",
             padding: "16px 20px",
             borderRadius: "8px",
             display: "flex",
@@ -611,15 +611,15 @@ function TaxTab({
           }}
         >
           <Info
-            color="#fb923c"
+            color="var(--warning)"
             size={28}
             style={{ flexShrink: 0, marginTop: "2px" }}
           />
           <div>
-            <h3 style={{ color: "#fb923c", margin: "0 0 8px 0" }}>
-              Depreciation Recapture Warning
+            <h3 style={{ color: "var(--warning)", margin: "0 0 8px 0" }}>
+              Depreciation recapture
             </h3>
-            <p style={{ margin: 0, color: "#e2e8f0", lineHeight: 1.5 }}>
+            <p style={{ margin: 0, color: "var(--text-primary)", lineHeight: 1.5 }}>
               When you sell, the IRS will "recapture" all depreciation claimed
               and tax it at 25%. For each year you rent, that's{" "}
               <strong>{formatCurrency(userShareOfDepreciation)}</strong> per
@@ -658,14 +658,14 @@ function TaxTab({
           Step 1: What do we pay every month (Year {selectedYear})?
         </div>
         <div className="card-body">
-          <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>
             Every month, we pay 4 things for this house. But the government only
             gives tax breaks on 2 of them.
           </p>
           <div className="tax-item-grid">
             <div className="tax-item yes">
               <div className="tax-item-header">
-                <CheckCircle color="#4ade80" size={20} /> Mortgage Interest
+                <CheckCircle color="var(--positive)" size={20} /> Mortgage interest
               </div>
               <div className="tax-item-amount">
                 {formatCurrency(monthlyInterest)} / mo
@@ -677,7 +677,7 @@ function TaxTab({
             </div>
             <div className="tax-item no">
               <div className="tax-item-header">
-                <XCircle color="#f87171" size={20} /> Mortgage Principal
+                <XCircle color="var(--negative)" size={20} /> Mortgage principal
               </div>
               <div className="tax-item-amount">
                 {formatCurrency(monthlyPrincipal)} / mo
@@ -689,7 +689,7 @@ function TaxTab({
             </div>
             <div className="tax-item yes">
               <div className="tax-item-header">
-                <CheckCircle color="#4ade80" size={20} /> Property Tax
+                <CheckCircle color="var(--positive)" size={20} /> Property tax
               </div>
               <div className="tax-item-amount">
                 {formatCurrency(propertyTax)} / mo
@@ -701,7 +701,7 @@ function TaxTab({
             </div>
             <div className="tax-item no">
               <div className="tax-item-header">
-                <XCircle color="#f87171" size={20} /> HOA Dues
+                <XCircle color="var(--negative)" size={20} /> HOA dues
               </div>
               <div className="tax-item-amount">{formatCurrency(hoa)} / mo</div>
               <div className="tax-item-note">
@@ -719,41 +719,41 @@ function TaxTab({
           Step 2: Each owner on title deducts their share
         </div>
         <div className="card-body">
-          <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
-            The IRS only lets you deduct YOUR share of what you pay. The
+          <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>
+            The IRS only lets you deduct your share of what you pay. The
             mortgage and deed are split by title share:
           </p>
           <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
             {titleHolders.map((o) => {
               const mine = o.id === youId;
-              const accent = mine ? "#60a5fa" : "#a855f7";
+              const accent = mine ? "var(--info)" : "var(--rental)";
               return (
                 <div
                   key={o.id}
                   style={{
                     flex: 1,
                     minWidth: "250px",
-                    background: mine ? "rgba(96, 165, 250, 0.1)" : "rgba(168, 85, 247, 0.1)",
-                    border: `1px solid ${mine ? "rgba(96, 165, 250, 0.3)" : "rgba(168, 85, 247, 0.3)"}`,
+                    background: mine ? "color-mix(in srgb, var(--info) 10%, transparent)" : "color-mix(in srgb, var(--rental) 10%, transparent)",
+                    border: `1px solid ${mine ? "color-mix(in srgb, var(--info) 30%, transparent)" : "color-mix(in srgb, var(--rental) 30%, transparent)"}`,
                     borderRadius: "12px",
                     padding: "20px",
                   }}
                 >
                   <div style={{ color: accent, fontWeight: "bold", marginBottom: "12px", fontSize: "1.1rem" }}>
-                    {o.name}&apos;s {Number(o.title.toFixed(2))}% Share (Year {selectedYear})
+                    {o.name === "You" ? "Your" : `${o.name}'s`} {Number(o.title.toFixed(2))}% share (year {selectedYear})
                   </div>
                   <div className="row">
-                    <span>Mortgage Interest:</span>{" "}
+                    <span>Mortgage interest</span>{" "}
                     <span>{formatCurrency(o.scheduleA.shareOfInterest)} / yr</span>
                   </div>
                   <div className="row">
-                    <span>Property Tax:</span>{" "}
+                    <span>Property tax</span>{" "}
                     <span>{formatCurrency(o.scheduleA.shareOfPropertyTax)} / yr</span>
                   </div>
                   <hr style={{ opacity: 0.2 }} />
                   <div className="row total">
-                    <span>Deductible Total:</span>{" "}
-                    <span style={{ color: "#4ade80" }}>
+                    <span>Deductible total</span>{" "}
+                    <span style={{ color: "var(--positive)" }}>
                       {formatCurrency(o.scheduleA.deductibleInterest + o.scheduleA.deductiblePropertyTax)} / yr
                     </span>
                   </div>
@@ -770,43 +770,43 @@ function TaxTab({
           Step 3: Are there any IRS limits that reduce this?
         </div>
         <div className="card-body">
-          <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>
             The government puts caps on how much you can deduct. Let's check
             both:
           </p>
           <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
             <CapCheck ok={interestFullyDeductible} title="Mortgage Interest Cap">
               <div className="row">
-                <span>IRS Limit:</span> <span>{formatCurrency(mortgageDebtLimit)} of debt per person</span>
+                <span>IRS limit</span> <span>{formatCurrency(mortgageDebtLimit)} of debt per person</span>
               </div>
               <div className="row">
-                <span>Your share of loan:</span> <span>{formatCurrency(userShareOfLoan)}</span>
+                <span>Your share of the loan</span> <span>{formatCurrency(userShareOfLoan)}</span>
               </div>
               <div className="row">
-                <span>Deductible interest:</span>{" "}
+                <span>Deductible interest</span>{" "}
                 <span>{formatCurrency(deductibleInterest)} of {formatCurrency(userShareOfInterest)}</span>
               </div>
             </CapCheck>
             <CapCheck ok={saltUnderCap} title="SALT Cap">
               <div className="row">
-                <span>IRS Limit (2026):</span> <span>{formatCurrency(saltCap)} total</span>
+                <span>IRS limit (2026)</span> <span>{formatCurrency(saltCap)} total</span>
               </div>
               <div className="row">
-                <span>CA State Tax:</span> <span>{formatCurrency(caStateTax)}</span>
+                <span>CA state tax</span> <span>{formatCurrency(caStateTax)}</span>
               </div>
               <div className="row">
-                <span>+ Your Property Tax:</span> <span>{formatCurrency(userShareOfPropertyTax)}</span>
+                <span>+ Your property tax</span> <span>{formatCurrency(userShareOfPropertyTax)}</span>
               </div>
               <div className="row">
-                <span>Your SALT Total:</span>{" "}
-                <span style={{ color: saltUnderCap ? "#4ade80" : "#fb923c" }}>
+                <span>Your SALT total</span>{" "}
+                <span style={{ color: saltUnderCap ? "var(--positive)" : "var(--warning)" }}>
                   {formatCurrency(saltTotal)} {saltUnderCap ? "≤" : ">"} {formatCurrency(saltCap)}
                 </span>
               </div>
             </CapCheck>
           </div>
           <p
-            style={{ color: "#94a3b8", marginTop: "16px", fontSize: "0.95rem" }}
+            style={{ color: "var(--text-secondary)", marginTop: "16px", fontSize: "0.95rem" }}
           >
             {interestFullyDeductible && saltUnderCap
               ? "Both caps cleared. 100% of your housing deductions are usable."
@@ -821,7 +821,7 @@ function TaxTab({
           Step 4: How much money does this actually save you?
         </div>
         <div className="card-body">
-          <p style={{ color: "#94a3b8", marginBottom: "20px" }}>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "20px" }}>
             A "deduction" doesn't mean free money — it means you tell the IRS
             "don't tax me on this amount of my income." The savings depend on
             your tax bracket.
@@ -829,7 +829,7 @@ function TaxTab({
 
           <div
             style={{
-              background: "rgba(0,0,0,0.3)",
+              background: "var(--surface-sunken)", border: "1px solid var(--border)",
               padding: "24px",
               borderRadius: "12px",
               marginBottom: "20px",
@@ -837,47 +837,47 @@ function TaxTab({
           >
             <div
               style={{
-                color: "#cbd5e1",
+                color: "var(--text-secondary)",
                 marginBottom: "16px",
                 fontWeight: "bold",
               }}
             >
-              Without the house:
+              Without the house
             </div>
             <div className="row">
-              <span>Your income:</span> <span>{formatCurrency(w2Income)}</span>
+              <span>Your income</span> <span>{formatCurrency(w2Income)}</span>
             </div>
             <div className="row">
-              <span>Standard deduction (everyone gets this):</span>{" "}
+              <span>Standard deduction (everyone gets this)</span>{" "}
               <span>- {formatCurrency(standardDeduction)}</span>
             </div>
             <div className="row total">
               <span>Taxable income:</span> <span>{formatCurrency(w2Income - standardDeduction)}</span>
             </div>
             <div className="row" style={{ marginTop: "8px" }}>
-              <span>Tax bracket:</span>{" "}
-              <span style={{ color: "#60a5fa" }}>
+              <span>Tax bracket</span>{" "}
+              <span style={{ color: "var(--info)" }}>
                 24% (covers $105,701 - $201,775)
               </span>
             </div>
           </div>
 
           <div style={{ textAlign: "center", margin: "16px 0" }}>
-            <ArrowDown color="#a855f7" size={32} />
+            <ArrowDown color="var(--rental)" size={32} />
           </div>
 
           <div
             style={{
-              background: "rgba(168, 85, 247, 0.1)",
+              background: "color-mix(in srgb, var(--rental) 6%, transparent)",
               padding: "24px",
               borderRadius: "12px",
-              border: "1px solid rgba(168, 85, 247, 0.3)",
+              border: "1px solid color-mix(in srgb, var(--rental) 30%, transparent)",
               marginBottom: "20px",
             }}
           >
             <div
               style={{
-                color: "#a855f7",
+                color: "var(--rental)",
                 marginBottom: "16px",
                 fontWeight: "bold",
               }}
@@ -885,21 +885,21 @@ function TaxTab({
               With the house (Year {selectedYear}):
             </div>
             <div className="row">
-              <span>Your income:</span> <span>{formatCurrency(w2Income)}</span>
+              <span>Your income</span> <span>{formatCurrency(w2Income)}</span>
             </div>
             <div className="row">
-              <span>CA State Tax (SALT):</span> <span>- {formatCurrency(caStateTax)}</span>
+              <span>CA state tax (SALT)</span> <span>- {formatCurrency(caStateTax)}</span>
             </div>
             <div className="row">
-              <span>Your Property Tax (SALT):</span>{" "}
+              <span>Your property tax (SALT)</span>{" "}
               <span>- {formatCurrency(deductiblePropertyTax)}</span>
             </div>
             <div className="row">
-              <span>Your Mortgage Interest:</span>{" "}
+              <span>Your mortgage interest</span>{" "}
               <span>- {formatCurrency(deductibleInterest)}</span>
             </div>
             {!itemizes && (
-              <div className="row" style={{ color: "#fbbf24" }}>
+              <div className="row" style={{ color: "var(--warning)" }}>
                 <span>Itemized total is below the standard deduction:</span>{" "}
                 <span>take the {formatCurrency(standardDeduction)} standard</span>
               </div>
@@ -912,32 +912,32 @@ function TaxTab({
 
           <div
             style={{
-              background: "rgba(74, 222, 128, 0.1)",
+              background: "color-mix(in srgb, var(--positive) 6%, transparent)",
               padding: "24px",
               borderRadius: "12px",
-              border: "1px solid rgba(74, 222, 128, 0.3)",
+              border: "1px solid color-mix(in srgb, var(--positive) 30%, transparent)",
             }}
           >
             <div
               style={{
-                color: "#4ade80",
+                color: "var(--positive)",
                 marginBottom: "16px",
                 fontWeight: "bold",
                 fontSize: "1.1rem",
               }}
             >
-              The Savings:
+              The savings
             </div>
             <div className="row">
-              <span>Income you no longer pay tax on:</span>{" "}
+              <span>Income you no longer pay tax on</span>{" "}
               <span>{formatCurrency(incrementalDeduction)}</span>
             </div>
             <div className="row">
-              <span>Your tax rate on that income:</span> <span>24%</span>
+              <span>Your tax rate on that income</span> <span>24%</span>
             </div>
             <hr style={{ opacity: 0.2, margin: "12px 0" }} />
             <div className="row">
-              <span>Annual tax savings:</span>{" "}
+              <span>Annual tax savings</span>{" "}
               <span className="positive">
                 {formatCurrency(annualTaxSavings)} / year
               </span>
@@ -946,14 +946,14 @@ function TaxTab({
               className="row total"
               style={{ fontSize: "1.3rem", marginTop: "8px" }}
             >
-              <span>Monthly tax savings:</span>
+              <span>Monthly tax savings</span>
               <span className="positive">
                 {formatCurrency(userTaxShield)} / month
               </span>
             </div>
             <p
               style={{
-                color: "#94a3b8",
+                color: "var(--text-secondary)",
                 fontSize: "0.9rem",
                 marginTop: "16px",
                 marginBottom: 0,
@@ -968,8 +968,8 @@ function TaxTab({
       {/* WHY IT DECREASES */}
       <div
         style={{
-          background: "rgba(96, 165, 250, 0.1)",
-          border: "1px solid rgba(96, 165, 250, 0.3)",
+          background: "color-mix(in srgb, var(--info) 6%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--info) 30%, transparent)",
           padding: "16px 20px",
           borderRadius: "8px",
           display: "flex",
@@ -977,15 +977,15 @@ function TaxTab({
         }}
       >
         <Info
-          color="#60a5fa"
+          color="var(--info)"
           size={28}
           style={{ flexShrink: 0, marginTop: "2px" }}
         />
         <div>
-          <h3 style={{ color: "#60a5fa", margin: "0 0 8px 0" }}>
+          <h3 style={{ color: "var(--info)", margin: "0 0 8px 0" }}>
             Why does this number shrink over time?
           </h3>
-          <p style={{ margin: 0, color: "#e2e8f0", lineHeight: 1.5 }}>
+          <p style={{ margin: 0, color: "var(--text-primary)", lineHeight: 1.5 }}>
             Your mortgage payment stays the same every month (
             {formatCurrency(mortgage)}), but over time more of it goes toward
             paying off the loan (principal) and less goes to the bank as a fee
