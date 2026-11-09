@@ -59,18 +59,11 @@
   /* Radii */
   --radius-sm: 6px;
   --radius-md: 8px;
-  --radius-lg: 10px;
 
   /* Older names still used across the tabs */
-  --bg-primary: var(--bg);
-  --bg-secondary: var(--surface);
-  --bg-card: var(--surface);
-  --bg-card-hover: var(--surface);
   --border-subtle: var(--border);
   --border-accent: color-mix(in srgb, var(--accent) 40%, transparent);
   --accent-blue: var(--accent);
-  --accent-blue-glow: transparent;
-  --accent-purple: var(--rental);
   --accent-teal: var(--positive);
 }
 
@@ -712,12 +705,6 @@ h3,
   gap: 16px;
 }
 
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
-}
-
 /* ============================================================
    14. TABLES
    ============================================================ */
@@ -893,77 +880,6 @@ h3,
   font-weight: 600;
 }
 
-/* ============================================================
-   17. INFO & WARNING BOXES
-   ============================================================ */
-.info-box {
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  padding: 14px 18px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-.warning-box {
-  background: color-mix(in srgb, var(--warning) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
-  padding: 14px 18px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-/* ============================================================
-   18. SPLIT INFO & MISC
-   ============================================================ */
-.split-info {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.split-item {
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-  border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  transition: background 0.2s ease;
-}
-
-.split-item:hover {
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
-}
-
-.total-pot {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), color-mix(in srgb, var(--rental) 8%, transparent));
-  border: 1px solid color-mix(in srgb, var(--rental) 25%, transparent);
-  font-size: 1rem;
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.rent-value {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
 .subtitle {
   color: var(--text-secondary);
   font-size: 0.85rem;
@@ -972,19 +888,6 @@ h3,
 
 .controls-card {
   text-align: center;
-}
-
-.chart-card {
-  height: 400px;
-  display: flex;
-  flex-direction: column;
-}
-
-.chart-container {
-  flex: 1;
-  margin-top: 16px;
-  min-height: 0;
-  position: relative;
 }
 
 /* ============================================================
@@ -1033,18 +936,6 @@ hr {
   font-weight: 600;
 }
 
-.opp-cf-subtotal {
-  padding-top: 6px;
-}
-
-.opp-cf-surplus {
-  margin-top: 4px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--ink) 3%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ink) 6%, transparent);
-}
-
 .opp-surplus-positive {
   color: var(--accent-teal);
   font-weight: 700;
@@ -1059,20 +950,6 @@ hr {
   height: 1px;
   background: color-mix(in srgb, var(--ink) 8%, transparent);
   margin: 10px 0;
-}
-
-.opp-cf-group-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  margin-top: 2px;
-}
-
-.opp-cf-total {
-  padding-top: 8px;
 }
 
 .opp-verdict-stat {
@@ -1266,8 +1143,7 @@ hr {
    21. GLOBAL TRANSITIONS
    ============================================================ */
 a,
-button,
-.split-item {
+button {
   transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -1311,8 +1187,7 @@ button:focus:not(:focus-visible) {
 @media (max-width: 768px) {
   /* Grid layouts go single-column */
   .grid,
-  .grid-3,
-  .tax-item-grid {
+.tax-item-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1348,11 +1223,6 @@ button:focus:not(:focus-visible) {
 
   .math-value.highlight-large {
     font-size: 1.1rem;
-  }
-
-  .split-info {
-    flex-direction: column;
-    gap: 8px;
   }
 }
 

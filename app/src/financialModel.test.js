@@ -2,14 +2,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  averageLoanBalance,
   buildAmortizationSchedule,
-  buildRentFlow,
+  calculateBuyVsRent,
   calculateScheduleATaxSavings,
   calculateCashToClose,
   calculateOwnerCashFlows,
   calculateCumulativeRentalTaxSavings,
   calculateMortgagePayment,
   calculateNetWorthComparison,
+  ownerTaxableGain,
+  paymentBreakdown,
+  projectLongTerm,
+  rentalTaxForYear,
+  TAX_ASSUMPTIONS,
   valueInYear,
 } from "./financialModel.js";
 import {
@@ -68,8 +74,8 @@ test("cumulative rental savings applies each year's rent instead of the final-ye
     hoaInflationPercent: 4,
     tenantRentMonthly: 6500,
     rentInflationPercent: 3,
-    annualDepreciationShare: 15272.7272727,
-    annualOperatingExpenseShare: 2625,
+    annualDepreciation: 30545.4545454,
+    annualOperatingExpenses: 5250,
     taxShare: 0.5,
     marginalRate: 0.24,
   });
@@ -96,7 +102,7 @@ test("schedule A savings only counts deductions above the standard deduction", (
   const result = calculateScheduleATaxSavings({
     annualInterest: 54000,
     annualPropertyTax: 12390,
-    loanAmount: 840000,
+    loanBalance: 840000,
   });
 
   assert.equal(result.interestFullyDeductible, true);
@@ -109,7 +115,7 @@ test("schedule A savings applies the SALT cap and mortgage debt limit", () => {
   const result = calculateScheduleATaxSavings({
     annualInterest: 120000,
     annualPropertyTax: 60000,
-    loanAmount: 2000000,
+    loanBalance: 2000000,
   });
 
   assert.equal(result.interestFullyDeductible, false);
@@ -134,40 +140,16 @@ test("cash to close splits down payment and closing costs by equity share", () =
 });
 
 const rentFlowCosts = { interest: 4000, principal: 1000, propertyTax: 1000, hoa: 1500 };
-const sumLinks = (flow, key, id) =>
-  flow.links.filter((l) => l[key] === id).reduce((s, l) => s + l.value, 0);
 
-test("rent flow splits an owner-mode shortfall 50/25/25 and balances every node", () => {
-  const flow = buildRentFlow({
-    isRental: false,
-    owners: DEFAULT_OWNERS,
-    totalRent: 6200,
-    costs: rentFlowCosts,
-  });
-  assert.equal(flow.topUp, 1300);
-  assert.equal(flow.surplus, 0);
-  assert.equal(sumLinks(flow, "source", "in-investor"), 650);
-  assert.equal(sumLinks(flow, "source", "in-you"), 3200 + 325);
-  for (const node of flow.nodes) {
-    if (node.column > 0) closeTo(sumLinks(flow, "target", node.id), node.value);
-    if (node.column < 2) closeTo(sumLinks(flow, "source", node.id), node.value);
-  }
-});
-
-test("rent flow distributes a rental surplus and skips the top-up", () => {
-  const flow = buildRentFlow({
-    isRental: true,
-    owners: DEFAULT_OWNERS,
-    totalRent: 9000,
-    costs: { ...rentFlowCosts, opex: 500 },
-  });
-  assert.equal(flow.surplus, 1000);
-  assert.ok(!flow.nodes.some((n) => n.id === "topUp"));
-  assert.deepEqual(
-    flow.nodes.filter((n) => n.column === 0).map((n) => n.id),
-    ["in-tenant"],
-  );
-  assert.equal(flow.nodes.find((n) => n.id === "out-investor").value, 500);
+test("payment breakdown finds the owner top-up or the surplus", () => {
+  const short = paymentBreakdown({ totalRent: 6200, costs: rentFlowCosts });
+  assert.equal(short.totalCosts, 7500);
+  assert.equal(short.topUp, 1300);
+  assert.equal(short.surplus, 0);
+  const extra = paymentBreakdown({ totalRent: 9000, costs: { ...rentFlowCosts, opex: 500 } });
+  assert.equal(extra.surplus, 1000);
+  assert.equal(extra.topUp, 0);
+  assert.deepEqual(extra.parts.map((p) => p.id), ["interest", "propertyTax", "hoa", "opex", "principal"]);
 });
 
 const twoOwners = [
@@ -175,10 +157,7 @@ const twoOwners = [
   { id: "b", name: "Blair", equity: 40, title: 40, rent: 2000, color: "#c084fc" },
 ];
 
-test("rent flow and owner cash flows work for two owners", () => {
-  const flow = buildRentFlow({ isRental: false, owners: twoOwners, totalRent: 4500, costs: rentFlowCosts });
-  assert.equal(flow.topUp, 3000);
-  assert.equal(sumLinks(flow, "source", "in-a"), 2500 + 1800);
+test("owner cash flows work for two owners", () => {
   const rows = calculateOwnerCashFlows({
     owners: twoOwners,
     isRental: false,
@@ -226,4 +205,102 @@ test("scenario normalization repairs bad input", () => {
   assert.equal(fixed.owners.filter((o) => o.isYou).length, 1);
   assert.equal(fixed.owners[1].isYou, true);
   assert.deepEqual(normalizeInputs(null).owners, DEFAULT_OWNERS);
+});
+
+test("rental tax uses the configured marginal rate and charges tax on a profit", () => {
+  const year = rentalTaxForYear({
+    rentAnnual: 100000,
+    interest: 40000,
+    propertyTax: 10000,
+    hoaAnnual: 10000,
+    opexAnnual: 5000,
+    depreciation: 25000,
+    taxShare: 0.5,
+  });
+  assert.equal(year.netRentalIncome, 5000);
+  closeTo(year.tax, 5000 * TAX_ASSUMPTIONS.marginalRate);
+});
+
+test("the mortgage debt limit follows the balance, not the original loan", () => {
+  const schedule = buildAmortizationSchedule(1600000, 6.5, 30);
+  const year25 = averageLoanBalance(schedule, 1600000, 25);
+  assert.ok(year25 < 750000);
+  assert.equal(averageLoanBalance(schedule, 1600000, 1), (1600000 + schedule[0].balance) / 2);
+  const late = calculateScheduleATaxSavings({
+    annualInterest: schedule[24].interest,
+    annualPropertyTax: 20000,
+    loanBalance: year25,
+    ownerShare: 1,
+  });
+  assert.equal(late.interestFullyDeductible, true);
+});
+
+test("each owner's Section 121 exclusion is capped at their own share of the gain", () => {
+  const gain = 600000;
+  const taxable = [0.9, 0.1].reduce(
+    (sum, titleShare) => sum + ownerTaxableGain({ capitalGain: gain, titleShare, resident: true, excluded: true }),
+    0,
+  );
+  assert.equal(taxable, 540000 - 250000);
+  assert.equal(ownerTaxableGain({ capitalGain: gain, titleShare: 0.5, resident: false, excluded: true }), 300000);
+  assert.equal(ownerTaxableGain({ capitalGain: -1000, titleShare: 1, resident: true, excluded: false }), 0);
+});
+
+test("long-term projection opens and closes the Section 121 window", () => {
+  const rows = projectLongTerm({
+    purchasePrice: 1000000,
+    amortizationSchedule: buildAmortizationSchedule(800000, 6.5, 30),
+    baseHOA: 1000,
+    hoaInflation: 4,
+    appreciation: 5,
+    moveOutYear: 5,
+    owners: [
+      { title: 90, rent: 3000 },
+      { title: 10, rent: 3000 },
+    ],
+  });
+  assert.deepEqual(
+    [1, 5, 8, 9].map((y) => rows[y - 1].section121Status),
+    ["too-soon", "living", "eligible", "expired"],
+  );
+  const year8 = rows[7];
+  closeTo(year8.taxableGain, Math.max(0, year8.capitalGain * 0.9 - 250000) + Math.max(0, year8.capitalGain * 0.1 - 250000));
+  closeTo(rows[8].taxableGain, rows[8].capitalGain);
+  closeTo(rows[1].annualHOA, 12000 * 1.04);
+});
+
+test("buy vs rent takes tax on the sale out of the proceeds", () => {
+  const loanAmount = 840000;
+  const amortizationSchedule = buildAmortizationSchedule(loanAmount, 6.5, 30);
+  const base = {
+    ...DEFAULT_INPUTS,
+    loanAmount,
+    mortgage: calculateMortgagePayment(loanAmount, 6.5, 30),
+    basePropertyTaxAnnual: 1050000 * 0.0118,
+    youShare: 0.25,
+    youTitleShare: 0.5,
+    youRent: 3200,
+    ownerRentTotal: 6200,
+    amortizationSchedule,
+  };
+  const late = calculateBuyVsRent({ ...base, selectedYear: 15 });
+  const gain = 1050000 * (Math.pow(1.03, 15) - 1);
+  const recapture = (1050000 * 0.8) / 27.5 * 10 * 0.5;
+  closeTo(late.saleTaxUser, gain * 0.5 * 0.15 + recapture * 0.25, 1);
+  closeTo(
+    late.userNetProceeds,
+    (late.currentHomeValueUser - late.remainingLoanUser - late.sellerClosingCostsUser) - late.saleTaxUser,
+    1,
+  );
+  assert.equal(late.buyLiquidNetWorth, late.buyBrokerage + late.userNetProceeds);
+  // Inside the window a small gain is fully excluded.
+  assert.equal(calculateBuyVsRent({ ...base, selectedYear: 3 }).saleTaxUser, 0);
+});
+
+test("loaded scenarios are clamped to the slider ranges", () => {
+  const fixed = normalizeInputs({ moveOutYear: 5.5, downPaymentPercent: 150, interestRate: -3, selectedYear: 99 });
+  assert.equal(fixed.moveOutYear, 6);
+  assert.equal(fixed.downPaymentPercent, 50);
+  assert.equal(fixed.interestRate, 4);
+  assert.equal(fixed.selectedYear, 30);
 });

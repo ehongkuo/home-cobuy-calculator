@@ -1,106 +1,35 @@
 import React, { useState, useMemo } from "react";
 import { TrendingUp, CheckCircle, XCircle, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { formatCurrency } from "./utils";
+import { projectLongTerm, SECTION_121_EXCLUSION } from "./financialModel";
 
 function LongTermTab({
   selectedYear,
   purchasePrice,
   amortizationSchedule,
   baseHOA,
-  basePropertyTaxAnnual,
   hoaInflation,
   appreciation,
   moveOutYear,
-  exclusionOwners = 2,
+  owners,
 }) {
   const [showFullTable, setShowFullTable] = useState(false);
+  // Each owner on title who lived there gets their own exclusion.
+  const exclusionOwners = owners.filter((o) => o.title > 0 && o.rent > 0).length;
 
-  const projectionData = useMemo(() => {
-    const rows = [];
-    let currentHOAAnnual = baseHOA * 12;
-    let currentPropertyTax = basePropertyTaxAnnual;
-    const baseHOAAnnual = baseHOA * 12;
-
-    let cumulativeHOAPaid = 0;
-    let cumulativeBaseHOA = 0;
-
-    for (let year = 1; year <= 30; year++) {
-      const marketValue =
-        purchasePrice * Math.pow(1 + appreciation / 100, year);
-      const amortRow = amortizationSchedule[year - 1] || { balance: 0 };
-      const loanBalance = amortRow.balance;
-      const equity = marketValue - loanBalance;
-
-      // HOA compounds from year 2 onward
-      if (year > 1) {
-        currentHOAAnnual = currentHOAAnnual * (1 + hoaInflation / 100);
-      }
-
-      // Prop 13: property tax grows max 2%/yr from year 2 onward
-      if (year > 1) {
-        currentPropertyTax = currentPropertyTax * 1.02;
-      }
-
-      // Cumulative HOA tracking
-      cumulativeHOAPaid += currentHOAAnnual;
-      cumulativeBaseHOA += baseHOAAnnual;
-      const cumulativeHOAIncrease = cumulativeHOAPaid - cumulativeBaseHOA;
-
-      // Appreciation gain
-      const appreciationGain = marketValue - purchasePrice;
-
-      // Section 121: must have lived there 2 of the 5 years before the sale.
-      let section121Status;
-      if (year < 2) {
-        section121Status = "too-soon";
-      } else if (year <= moveOutYear) {
-        section121Status = "living";
-      } else if (year <= moveOutYear + 3) {
-        section121Status = "eligible";
-      } else {
-        section121Status = "expired";
-      }
-      const excluded =
-        section121Status === "living" || section121Status === "eligible";
-
-      const capitalGain = marketValue - purchasePrice;
-      const exclusionPerPerson = 250000;
-      const totalExclusion = exclusionPerPerson * exclusionOwners; // each resident on title
-      const taxableGain = excluded
-        ? Math.max(0, capitalGain - totalExclusion)
-        : Math.max(0, capitalGain);
-
-      // Net position: appreciation gain minus the extra HOA you paid due to inflation
-      const netPosition = appreciationGain - cumulativeHOAIncrease;
-
-      rows.push({
-        year,
-        marketValue,
-        loanBalance,
-        equity,
-        annualHOA: currentHOAAnnual,
-        monthlyHOA: currentHOAAnnual / 12,
-        annualPropertyTax: currentPropertyTax,
-        section121Status,
-        capitalGain,
-        taxableGain,
-        cumulativeHOAPaid,
-        cumulativeHOAIncrease,
-        appreciationGain,
-        netPosition,
-      });
-    }
-    return rows;
-  }, [
-    purchasePrice,
-    amortizationSchedule,
-    baseHOA,
-    basePropertyTaxAnnual,
-    hoaInflation,
-    appreciation,
-    moveOutYear,
-    exclusionOwners,
-  ]);
+  const projectionData = useMemo(
+    () =>
+      projectLongTerm({
+        purchasePrice,
+        amortizationSchedule,
+        baseHOA,
+        hoaInflation,
+        appreciation,
+        moveOutYear,
+        owners,
+      }),
+    [purchasePrice, amortizationSchedule, baseHOA, hoaInflation, appreciation, moveOutYear, owners],
+  );
 
   // Quick-access rows for the summary cards
   const year5 = projectionData[4];
@@ -281,7 +210,8 @@ function LongTermTab({
             they lived in the home for 2 of the 5 years before selling. This
             scenario has {exclusionOwners} qualifying{" "}
             {exclusionOwners === 1 ? "owner" : "owners"} (on title and paying
-            rent), so up to {formatCurrency(250000 * exclusionOwners)} combined.
+            rent), each up to {formatCurrency(SECTION_121_EXCLUSION)} of their own share of
+            the gain.
           </p>
           <p style={{ color: "var(--negative)", marginTop: "8px", marginBottom: 0 }}>
             Moving out after <strong>Year {moveOutYear}</strong> starts the clock

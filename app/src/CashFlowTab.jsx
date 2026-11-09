@@ -1,7 +1,7 @@
 import React from "react";
 import { Info } from "lucide-react";
 import { formatCurrency } from "./utils";
-import { buildRentFlow } from "./financialModel";
+import { paymentBreakdown } from "./financialModel";
 
 const pct = (share) => `${Number((share * 100).toFixed(2))}%`;
 
@@ -57,9 +57,7 @@ function CashFlowTab({
   // Split the level payment into interest and principal for the selected year.
   const paidThisYear = monthlyInterest + monthlyPrincipal;
   const interestPortion = paidThisYear > 0 ? mortgage * (monthlyInterest / paidThisYear) : 0;
-  const flow = buildRentFlow({
-    isRental,
-    owners,
+  const flow = paymentBreakdown({
     totalRent,
     costs: {
       interest: interestPortion,
@@ -69,10 +67,9 @@ function CashFlowTab({
       opex: isRental ? opExMonthly : 0,
     },
   });
-  const costs = flow.nodes
-    .filter((n) => n.column === 2 && COST_COLORS[n.kind])
-    .sort((a, b) => COST_ORDER.indexOf(a.kind) - COST_ORDER.indexOf(b.kind))
-    .map((n) => ({ ...n, color: COST_COLORS[n.kind] }));
+  const costs = flow.parts
+    .sort((a, b) => COST_ORDER.indexOf(a.id) - COST_ORDER.indexOf(b.id))
+    .map((c) => ({ ...c, color: COST_COLORS[c.id] }));
   const coverage = flow.totalCosts > 0 ? totalRent / flow.totalCosts : 1;
   const residents = owners.filter((o) => o.rent > 0);
   const rentSource = isRental

@@ -44,6 +44,26 @@ export const DEFAULT_INPUTS = {
   equivalentRent: 3300,
 };
 
+// Slider ranges; shared links and imports are clamped to them too.
+export const INPUT_RANGES = {
+  purchasePrice: { min: 100000, max: 5000000, step: 5000 },
+  downPaymentPercent: { min: 10, max: 50, step: 5 },
+  interestRate: { min: 4, max: 8, step: 0.125 },
+  baseHOA: { min: 0, max: 3000, step: 10 },
+  propertyTaxRate: { min: 0.5, max: 2, step: 0.01 },
+  moveOutYear: { min: 2, max: 10, step: 1 },
+  tenantRent: { min: 1000, max: 20000, step: 100 },
+  operatingExpenseRate: { min: 0, max: 5, step: 0.1 },
+  rentInflation: { min: 0, max: 10, step: 0.5 },
+  appreciation: { min: 0, max: 10, step: 0.5 },
+  hoaInflation: { min: 1, max: 10, step: 0.5 },
+  takeHome: { min: 2000, max: 15000, step: 100 },
+  nonHousingExpenses: { min: 500, max: 8000, step: 100 },
+  equivalentRent: { min: 500, max: 10000, step: 50 },
+  stockMarketReturn: { min: 0, max: 15, step: 0.5 },
+  selectedYear: { min: 1, max: 30, step: 1 },
+};
+
 const finite = (value, fallback) => {
   const n = typeof value === "string" ? parseFloat(value) : value;
   return typeof n === "number" && Number.isFinite(n) ? n : fallback;
@@ -101,8 +121,12 @@ export function normalizeInputs(raw) {
     inputs[key] = typeof fallback === "boolean"
       ? (typeof source[key] === "boolean" ? source[key] : fallback)
       : finite(source[key], fallback);
+    const range = INPUT_RANGES[key];
+    if (range) {
+      const n = range.step === 1 ? Math.round(inputs[key]) : inputs[key];
+      inputs[key] = clamp(n, range.min, range.max);
+    }
   }
-  inputs.selectedYear = clamp(Math.round(inputs.selectedYear), 1, 30);
   return inputs;
 }
 

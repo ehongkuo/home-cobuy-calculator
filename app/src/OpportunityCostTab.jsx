@@ -1,15 +1,7 @@
 import React, { useMemo } from "react";
 import MathTooltip from "./MathTooltip";
 import { formatCurrency } from "./utils";
-import {
-  BUYER_CLOSING_COST_RATE,
-  calculateNetWorthComparison,
-  calculateScheduleATaxSavings,
-  TAX_ASSUMPTIONS,
-  valueInYear,
-} from "./financialModel";
-
-const buyerClosingCostsPercent = BUYER_CLOSING_COST_RATE;
+import { calculateBuyVsRent, TAX_ASSUMPTIONS } from "./financialModel";
 
 function OpportunityCostTab({
   purchasePrice,
@@ -36,282 +28,60 @@ function OpportunityCostTab({
   includeTaxSavings = true,
 }) {
 
-  // ── Constants ──
-  const STARTING_CASH = 100000;
-  const downPaymentTotal = purchasePrice - loanAmount;
-  const sellerClosingCostsPercent = 0.06;
-
   const sharePct = `${Number((youShare * 100).toFixed(2))}%`;
-
   const marginalRate = TAX_ASSUMPTIONS.marginalRate;
-  const buildingRatio = 0.8;
-  const depreciationBasis = purchasePrice * buildingRatio;
-  const annualDepreciation = depreciationBasis / 27.5;
 
-  const data = useMemo(() => {
-    const initialDownPaymentUser = downPaymentTotal * youShare;
-    const initialClosingCostsUser =
-      purchasePrice * buyerClosingCostsPercent * youShare;
-    const totalInitialSunkUser =
-      initialDownPaymentUser + initialClosingCostsUser;
-
-    const monthlyStockRate =
-      Math.pow(1 + stockMarketReturn / 100, 1 / 12) - 1;
-    const availableForHousing = takeHome - nonHousingExpenses;
-
-    let buyBrokerage = STARTING_CASH - totalInitialSunkUser;
-    let rentBrokerage = STARTING_CASH;
-
-    let totalBuySurplusDeposited = 0;
-    let totalRentSurplusDeposited = 0;
-    let totalBuyHousingSpent = 0;
-    let totalRentHousingSpent = 0;
-
-    // Final month snapshot
-    let finalBuyHousingCost = 0;
-    let finalBuySurplus = 0;
-    let finalRentHousingCost = 0;
-    let finalRentSurplus = 0;
-    let finalMortgageShare = 0;
-    let finalHoaShare = 0;
-    let finalPropTaxShare = 0;
-    let finalTaxShield = 0;
-    let finalRentIncome = 0;
-    let finalIsRental = false;
-    let finalTenantRent = 0;
-    let finalOpExShare = 0;
-    let finalRentalTaxImpact = 0;
-
-    for (let m = 1; m <= selectedYear * 12; m++) {
-      const yearIndex = Math.floor((m - 1) / 12);
-      const currentYear = yearIndex + 1;
-      const isRental = currentYear > moveOutYear;
-
-      const currentHOA = valueInYear(baseHOA, hoaInflation, currentYear);
-      const currentTaxAnnual = valueInYear(
+  const data = useMemo(
+    () =>
+      calculateBuyVsRent({
+        purchasePrice,
+        loanAmount,
+        mortgage,
+        baseHOA,
         basePropertyTaxAnnual,
-        2,
-        currentYear,
-      );
-      const currentTaxMonthly = currentTaxAnnual / 12;
-
-      const yearData = amortizationSchedule[yearIndex] || {
-        interest: 0,
-        principal: 0,
-      };
-      const totalInterestForYear = yearData.interest;
-
-      let buyHousingCost = 0;
-      let monthMortgageShare = 0;
-      let monthHoaShare = 0;
-      let monthPropTaxShare = 0;
-      let monthTaxShield = 0;
-      let monthRentIncome = 0;
-      let monthTenantRent = 0;
-      let monthOpExShare = 0;
-      let monthRentalTaxImpact = 0;
-
-      if (!isRental) {
-        monthMortgageShare = mortgage * youShare;
-        monthHoaShare = currentHOA * youShare;
-        monthPropTaxShare = currentTaxMonthly * youShare;
-
-        monthRentIncome = ownerRentTotal * youShare;
-
-        monthTaxShield = includeTaxSavings
-          ? calculateScheduleATaxSavings({
-              annualInterest: totalInterestForYear,
-              annualPropertyTax: currentTaxAnnual,
-              loanAmount,
-              ownerShare: youTitleShare,
-            }).monthlyTaxSavings
-          : 0;
-
-        buyHousingCost =
-          monthMortgageShare +
-          monthHoaShare +
-          monthPropTaxShare +
-          youRent -
-          monthRentIncome -
-          monthTaxShield;
-      } else {
-        const inflatedTenantRent = valueInYear(
-          tenantRent,
-          rentInflation,
-          currentYear,
-        );
-        monthTenantRent = inflatedTenantRent;
-        const currentOpExAnnual =
-          purchasePrice * (operatingExpenseRate / 100);
-        monthOpExShare = (currentOpExAnnual / 12) * youShare;
-
-        monthMortgageShare = mortgage * youShare;
-        monthHoaShare = currentHOA * youShare;
-        monthPropTaxShare = currentTaxMonthly * youShare;
-        monthRentIncome = inflatedTenantRent * youShare;
-
-        const rentalInterest = totalInterestForYear * youTitleShare;
-        const rentalPropertyTax = currentTaxAnnual * youTitleShare;
-        const rentalHOA = currentHOA * 12 * youTitleShare;
-        const userShareOfDepreciation =
-          annualDepreciation * youTitleShare;
-        const userShareOfOperatingExpenses =
-          currentOpExAnnual * youTitleShare;
-        const totalRentalDeductions =
-          rentalInterest +
-          rentalPropertyTax +
-          rentalHOA +
-          userShareOfDepreciation +
-          userShareOfOperatingExpenses;
-
-        const annualRentalIncomeTax =
-          inflatedTenantRent * 12 * youTitleShare;
-        const netRentalIncomeTax =
-          annualRentalIncomeTax - totalRentalDeductions;
-        monthRentalTaxImpact = includeTaxSavings
-          ? (netRentalIncomeTax * marginalRate) / 12
-          : 0;
-
-        buyHousingCost =
-          monthMortgageShare +
-          monthHoaShare +
-          monthPropTaxShare +
-          monthOpExShare -
-          monthRentIncome +
-          monthRentalTaxImpact;
-      }
-
-      const rentHousingCost = isRental
-        ? 0
-        : valueInYear(equivalentRent, rentInflation, currentYear);
-
-      const buySurplus = availableForHousing - buyHousingCost;
-      const rentSurplus = availableForHousing - rentHousingCost;
-
-      buyBrokerage = buyBrokerage * (1 + monthlyStockRate) + buySurplus;
-      rentBrokerage = rentBrokerage * (1 + monthlyStockRate) + rentSurplus;
-
-      totalBuySurplusDeposited += buySurplus;
-      totalRentSurplusDeposited += rentSurplus;
-      totalBuyHousingSpent += buyHousingCost;
-      totalRentHousingSpent += rentHousingCost;
-
-      if (m === selectedYear * 12) {
-        finalBuyHousingCost = buyHousingCost;
-        finalBuySurplus = buySurplus;
-        finalRentHousingCost = rentHousingCost;
-        finalRentSurplus = rentSurplus;
-        finalMortgageShare = monthMortgageShare;
-        finalHoaShare = monthHoaShare;
-        finalPropTaxShare = monthPropTaxShare;
-        finalTaxShield = monthTaxShield;
-        finalRentIncome = monthRentIncome;
-        finalIsRental = isRental;
-        finalTenantRent = monthTenantRent;
-        finalOpExShare = monthOpExShare;
-        finalRentalTaxImpact = monthRentalTaxImpact;
-      }
-    }
-
-    // Home equity
-    const finalPropertyVal =
-      purchasePrice * Math.pow(1 + appreciation / 100, selectedYear);
-    const yearIndex = Math.min(selectedYear - 1, 29);
-    const remainingLoanTotal =
-      amortizationSchedule.length > 0
-        ? amortizationSchedule[yearIndex]?.balance || 0
-        : loanAmount;
-
-    const grossEquityTotal = finalPropertyVal - remainingLoanTotal;
-    const sellerClosingCostsTotal =
-      finalPropertyVal * sellerClosingCostsPercent;
-
-    const userHomeEquity = grossEquityTotal * youShare;
-    const userNetProceeds =
-      (grossEquityTotal - sellerClosingCostsTotal) * youShare;
-
-    const {
-      buyLiquidNetWorth,
-      rentNetWorth,
-      pathAWins,
-      delta,
-    } = calculateNetWorthComparison({
-      buyBrokerage,
-      userNetProceeds,
-      rentBrokerage,
-    });
-
-    const buyCumulativeReturns =
-      buyBrokerage -
-      (STARTING_CASH - totalInitialSunkUser) -
-      totalBuySurplusDeposited;
-    const rentCumulativeReturns =
-      rentBrokerage - STARTING_CASH - totalRentSurplusDeposited;
-
-    return {
-      STARTING_CASH,
-      availableForHousing,
-      initialDownPaymentUser,
-      initialClosingCostsUser,
-      totalInitialSunkUser,
-      finalBuyHousingCost,
-      finalBuySurplus,
-      finalRentHousingCost,
-      finalRentSurplus,
-      finalMortgageShare,
-      finalHoaShare,
-      finalPropTaxShare,
-      finalTaxShield,
-      finalRentIncome,
-      finalIsRental,
-      finalTenantRent,
-      finalOpExShare,
-      finalRentalTaxImpact,
-      totalBuyHousingSpent,
-      totalRentHousingSpent,
-      totalBuySurplusDeposited,
-      totalRentSurplusDeposited,
-      buyBrokerage,
-      rentBrokerage,
-      buyCumulativeReturns,
-      rentCumulativeReturns,
-      userHomeEquity,
-      userNetProceeds,
-      sellerClosingCostsUser: sellerClosingCostsTotal * youShare,
-      currentHomeValueUser: finalPropertyVal * youShare,
-      remainingLoanUser: remainingLoanTotal * youShare,
-      buyLiquidNetWorth,
-      rentNetWorth,
-      pathAWins,
-      delta,
-    };
-  }, [
-    purchasePrice,
-    loanAmount,
-    mortgage,
-    baseHOA,
-    basePropertyTaxAnnual,
-    hoaInflation,
-    appreciation,
-    youShare,
-    youTitleShare,
-    youRent,
-    ownerRentTotal,
-    tenantRent,
-    operatingExpenseRate,
-    moveOutYear,
-    selectedYear,
-    stockMarketReturn,
-    equivalentRent,
-    rentInflation,
-    amortizationSchedule,
-    takeHome,
-    nonHousingExpenses,
-    downPaymentTotal,
-    annualDepreciation,
-    includeTaxSavings,
-    marginalRate,
-  ]);
+        hoaInflation,
+        appreciation,
+        youShare,
+        youTitleShare,
+        youRent,
+        ownerRentTotal,
+        tenantRent,
+        operatingExpenseRate,
+        moveOutYear,
+        selectedYear,
+        amortizationSchedule,
+        rentInflation,
+        takeHome,
+        nonHousingExpenses,
+        stockMarketReturn,
+        equivalentRent,
+        includeTaxSavings,
+      }),
+    [
+      purchasePrice,
+      loanAmount,
+      mortgage,
+      baseHOA,
+      basePropertyTaxAnnual,
+      hoaInflation,
+      appreciation,
+      youShare,
+      youTitleShare,
+      youRent,
+      ownerRentTotal,
+      tenantRent,
+      operatingExpenseRate,
+      moveOutYear,
+      selectedYear,
+      amortizationSchedule,
+      rentInflation,
+      takeHome,
+      nonHousingExpenses,
+      stockMarketReturn,
+      equivalentRent,
+      includeTaxSavings,
+    ],
+  );
 
   // ── Reusable line item ──
   const Line = ({ label, amount, bold, dim, tooltip }) => {
@@ -503,7 +273,7 @@ function OpportunityCostTab({
               <Line
                 label="Home equity (after 6% selling costs)"
                 amount={data.userNetProceeds}
-                tooltip={`Home Value (${sharePct}): ${formatCurrency(data.currentHomeValueUser)}\n- Loan (${sharePct}): ${formatCurrency(data.remainingLoanUser)}\n- Closing (6%): ${formatCurrency(data.sellerClosingCostsUser)}\n= ${formatCurrency(data.userNetProceeds)}`}
+                tooltip={`Home Value (${sharePct}): ${formatCurrency(data.currentHomeValueUser)}\n- Loan (${sharePct}): ${formatCurrency(data.remainingLoanUser)}\n- Closing (6%): ${formatCurrency(data.sellerClosingCostsUser)}\n- Tax on sale: ${formatCurrency(data.saleTaxUser)}\n= ${formatCurrency(data.userNetProceeds)}`}
               />
               <div className="opp-cf-divider" />
               <div className="opp-cf-line">
