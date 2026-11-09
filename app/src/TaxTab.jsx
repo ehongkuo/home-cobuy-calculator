@@ -59,11 +59,9 @@ function TaxTab({
   llcShare,
   titleHolders = [],
   youId,
-  userShareOfRentIncome,
 }) {
   if (isRental) {
-    const annualTaxSavingsFromLoss =
-      netRentalIncome < 0 ? Math.abs(netRentalIncome) * 0.24 : 0;
+    const annualTaxSavingsFromLoss = Math.max(0, -rentalTaxImpact);
     const monthlyTaxSavingsFromLoss = annualTaxSavingsFromLoss / 12;
 
     return (
@@ -249,12 +247,12 @@ function TaxTab({
                   marginBottom: "12px",
                 }}
               >
-                Income (your {(userShareOfRentIncome * 100).toFixed(1)}% of
+                Income (your {(llcShare * 100).toFixed(1)}% of
                 rent)
               </div>
               <div className="row">
                 <span>
-                  {(userShareOfRentIncome * 100).toFixed(1)}% of Tenant Rent:
+                  {(llcShare * 100).toFixed(1)}% of Tenant Rent:
                 </span>{" "}
                 <span className="positive">
                   {formatCurrency(rentalIncome)} / yr
